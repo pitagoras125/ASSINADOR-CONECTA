@@ -1,0 +1,23 @@
+﻿Conecta PDF para Windows
+Termos de uso • edição de 9 de novembro de 2026
+
+DESENVOLVIDO POR AVANTE SISTEMAS LTDA
+CNPJ 54.713.453/0001-94
+
+Uso do programa
+Você pode instalar e usar o Conecta PDF para ler, organizar, converter e assinar documentos pessoais ou profissionais. Use documentos, dados e certificados para os quais você tenha autorização.
+
+Assinaturas
+Ao usar a opção de assinatura por CPF, você declara os dados informados. Essa modalidade não verifica a identidade do titular do CPF. Na assinatura por certificado digital, confira o certificado selecionado, o arquivo e a posição da assinatura antes de concluir.
+
+Arquivos e digitalização
+Você escolhe os documentos que deseja abrir, os arquivos de saída e quando iniciar a digitalização pelo scanner selecionado. Conserve os originais e confira o resultado antes de compartilhar um documento.
+
+Atualizações
+Por padrão, o programa consulta o canal de atualizações e baixa novas versões em segundo plano. O programa verifica a assinatura do manifesto e a integridade do instalador antes de iniciar a atualização ao encerrar. Você pode alterar essa preferência em Configurações. Se os termos mudarem, o instalador solicitará um novo aceite.
+
+Componentes de terceiros
+As licenças dos componentes de terceiros continuam aplicáveis. Consulte AVISOS-DE-LICENCAS.md na pasta de instalação.
+
+Sua escolha
+Selecione a opção de aceite para continuar a instalação. Se discordar, escolha Cancelar para sair do instalador.
