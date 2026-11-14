@@ -43,10 +43,10 @@ def test_signed_manifest_tamper_and_downgrade():
     key=Ed25519PrivateKey.generate();pub=key.public_key().public_bytes(serialization.Encoding.Raw,serialization.PublicFormat.Raw)
     payload=dict(app='conecta-pdf-windows',version='1.0.1',url='https://github.com/pitagoras125/assinador-conecta-atualizacoes/releases/download/desktop-v1.0.1/setup.exe',size=100,sha256='a'*64)
     envelope=dict(payload=payload,signature=base64.b64encode(key.sign(canonical(payload))).decode())
-    assert validate_manifest(envelope,pub)['version']=='1.0.1'
+    assert validate_manifest(envelope,pub,current='1.0.0')['version']=='1.0.1'
     assert validate_manifest(envelope,pub,current='1.0.1') is None
     payload['size']=101
-    with pytest.raises(Exception):validate_manifest(envelope,pub)
+    with pytest.raises(Exception):validate_manifest(envelope,pub,current='1.0.0')
 
 def test_document_detection_and_capture_gate():
     frame=np.zeros((700,900,3),np.uint8);cv2.rectangle(frame,(150,100),(750,600),(255,255,255),-1)
