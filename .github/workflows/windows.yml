@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - '**.py'
+      - 'instalador.iss'
       - '.github/workflows/windows.yml'
 permissions:
   contents: read
