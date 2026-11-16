@@ -1,0 +1,23 @@
+name: Publicar Windows 1.1.0
+on:
+  push:
+    paths: ['.github/workflows/publicar-windows-110.yml']
+permissions:
+  actions: read
+  contents: write
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conferir e publicar instalador testado
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh api repos/$GH_REPO/actions/artifacts/14089415743/zip > windows.zip
+          echo '5091b80407d6cf09646b606c781da98b5f20f4a0f4f3ed12a7df2aba49fa1b0a  windows.zip' | sha256sum -c -
+          unzip windows.zip Instalar_Conecta_PDF_1.1.0.exe
+          sha256sum Instalar_Conecta_PDF_1.1.0.exe > SHA256SUMS.txt
+          gh release create v1.1.0 Instalar_Conecta_PDF_1.1.0.exe SHA256SUMS.txt --target 938ab99811c3dcd5e83334f0b70e876f941fc9d0 --draft --title 'Conecta PDF 1.1.0 para Windows' --notes 'Impressão de PDFs pelo Explorador do Windows, conversão de documentos com LibreOffice e exportação de PDF para texto ou imagens.'
+          gh release edit v1.1.0 --draft=false --latest
