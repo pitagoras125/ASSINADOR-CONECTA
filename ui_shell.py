@@ -4,7 +4,7 @@ from conversion_ui import convert
 from PySide6.QtCore import Qt,QSize,QByteArray,QRectF
 from PySide6.QtGui import QIcon,QPixmap,QPainter,QColor,QPalette
 from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtWidgets import (QApplication,QWidget,QFrame,QLabel,QPushButton,QVBoxLayout,QHBoxLayout,QTabBar,QComboBox,QLineEdit,QScrollArea,QListWidget,QTextEdit,QDialog,QMenu,QToolButton,QListView)
+from PySide6.QtWidgets import (QApplication,QWidget,QFrame,QLabel,QPushButton,QVBoxLayout,QHBoxLayout,QTabBar,QComboBox,QLineEdit,QScrollArea,QListWidget,QTextEdit,QDialog,QMenu,QToolButton,QListView,QSizePolicy)
 
 PATHS={
 'merge':'<path d="M3 4v4l8 6v6m10-16v4l-10 6m-4 2 4 4 4-4"/>',
@@ -36,7 +36,7 @@ def icon(name,color='#132b51',size=24):
 
 STYLE='''
 QWidget{font-family:"Segoe UI";font-size:14px;color:#142849;background:transparent}
-QMainWindow,QWidget#surface{background:#f5f9ff}
+QMainWindow,QWidget#surface{background:#f4f7fc}
 QDialog,QMessageBox,QProgressDialog,QFileDialog{background-color:#ffffff;color:#142849}
 QMessageBox QLabel,QDialog QLabel{color:#142849;background:transparent}
 QDialog QLineEdit,QDialog QTextEdit,QDialog QListWidget{background-color:#ffffff;color:#142849;selection-background-color:#dcecff;selection-color:#142849}
@@ -46,7 +46,7 @@ QFrame#rail{background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #edf5ff,stop:1
 QFrame#card{background:white;border:1px solid #e5edf7;border-radius:13px}
 QLabel#heading{font-size:20px;font-weight:700;color:#0a2046} QLabel#muted{color:#536989;font-size:13px}
 QPushButton{background:white;border:1px solid #dce7f6;border-radius:7px;padding:9px 12px;text-align:left}
-QPushButton:hover{background:#eaf3ff;border-color:#a4c9ff} QPushButton:disabled{color:#92a3bb;background:#eff3f8}
+QPushButton:focus{border:2px solid #075be8} QPushButton:hover{background:#eaf3ff;border-color:#a4c9ff} QPushButton:disabled{color:#92a3bb;background:#eff3f8}
 QPushButton#nav{background:transparent;border:0;padding:14px 16px;font-size:15px;border-radius:7px}
 QPushButton#nav:checked{background:#e3f0ff;color:#005cef;border-left:3px solid #0867ff}
 QPushButton#primary{background:#075ff0;color:white;border:0;padding:15px 13px;font-size:13px;font-weight:600}
@@ -59,7 +59,7 @@ QComboBox::drop-down{border:0;width:20px} QComboBox::down-arrow{image:none;borde
 QTabBar::tab{background:transparent;border:1px solid transparent;padding:13px 18px;margin-right:3px;min-width:130px;max-width:270px}
 QTabBar::tab:selected{background:white;border:1px solid #dce8f8;border-top:2px solid #1375ff;border-top-left-radius:9px;border-top-right-radius:9px;color:#004cbd}
 QTabBar::close-button{image:url(__CLOSE__);width:14px;height:14px}
-QScrollArea{border:0;background:#e7eef6} QListWidget{background:#e8f0f9;border:0;outline:0}
+QScrollArea{border:0;background:#e9eef5} QListWidget{background:#e8f0f9;border:0;outline:0}
 QListWidget::item{padding:7px;margin:6px;border:1px solid transparent;border-radius:3px}
 QListWidget::item:selected{background:#f4f9ff;border:2px solid #2477ff;color:#0055d8}
 QScrollBar:vertical{background:#eef3f8;width:9px} QScrollBar::handle:vertical{background:#c6d3e2;min-height:35px;border-radius:4px}
@@ -89,7 +89,7 @@ def build_shell(w):
     w.dialog.setObjectName('signatureDialog')
     old=w.takeCentralWidget();root=QWidget();root.setObjectName('surface');w.setCentralWidget(root)
     close_path=(Path(__file__).parent/'assets/close.svg').as_posix();w.setStyleSheet(STYLE.replace('__CLOSE__',close_path)+"QPushButton#tab{font-size:13px;padding:20px 12px;background:#edf4ff;border:1px solid #d5e5fc} QPushButton#tab:checked{background:#dcecff;border:1px solid #1673f5} QPushButton#nav:checked{border-left:0;border-bottom:3px solid #0867ff}")
-    w.actions=[];outer=QVBoxLayout(root);outer.setContentsMargins(14,8,14,8);outer.setSpacing(8)
+    w.actions=[];outer=QVBoxLayout(root);outer.setContentsMargins(18,12,18,10);outer.setSpacing(10)
     masthead = QFrame()
     masthead.setStyleSheet('QFrame {background: white; border: none;}')
     header = QHBoxLayout(masthead)
@@ -116,7 +116,14 @@ def build_shell(w):
         button = QToolButton()
         button.setIcon(icon(symbol))
         button.setIconSize(QSize(22, 22))
-        button.setFixedSize(36, 36)
+        button.setText({'Abrir documento':'Abrir','Salvar PDF':'Salvar','Girar visualização':'Girar','Mostrar páginas':'Páginas','Documento para PDF':'Converter','Exportar PDF para texto ou imagens':'Exportar','Assinar em lote':'Lote','Imagens para PDF':'Imagens'}.get(label,label))
+        button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
+        button.setMinimumSize(64, 62)
+        if symbol in ('left','right'):
+            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+            button.setMinimumSize(32,32)
+            button.setFixedSize(32,32)
+        button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         button.setToolTip(label)
         button.setAccessibleName(label)
         button.clicked.connect(callback)
@@ -137,6 +144,19 @@ def build_shell(w):
             divider.setFrameShape(QFrame.Shape.VLine)
             toolbar.addWidget(divider)
         toolbar.addSpacing(4)
+    tool_scroll = QScrollArea()
+    tool_scroll.setWidgetResizable(True)
+    tool_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    tool_scroll.setWidget(strip)
+    tool_scroll.setFixedHeight(86)
+    outer.addWidget(tool_scroll)
+    navigation = QFrame()
+    navigation.setStyleSheet('QToolButton {background:transparent;border:0;border-radius:6px;padding:6px} QToolButton:hover {background:#e6f0ff}')
+    toolbar = QHBoxLayout(navigation)
+    toolbar.setContentsMargins(4,0,4,0)
+    caption = QLabel('ÁREA DO DOCUMENTO')
+    caption.setObjectName('muted')
+    toolbar.addWidget(caption)
     toolbar.addStretch()
     w.zoom = QComboBox()
     w.zoom.addItems(['Página inteira','Ajustar largura','75%','100%','125%','150%','200%'])
@@ -146,10 +166,24 @@ def build_shell(w):
     w.pagination = QLabel('0 / 0')
     toolbar.addWidget(w.pagination)
     action('right','Próxima página',lambda: w.move(1))
-    outer.addWidget(strip)
+    outer.addWidget(navigation)
     w.search_bar=QWidget();search=QHBoxLayout(w.search_bar);search.setContentsMargins(0,0,0,0);w.query=QLineEdit();w.query.setPlaceholderText('Pesquisar no documento…');w.query.returnPressed.connect(w.find_text);search.addWidget(w.query);w.button(search,'Localizar',w.find_text);w.button(search,'Fechar',w.search_bar.hide);w.search_bar.hide();outer.addWidget(w.search_bar)
-    view=QHBoxLayout();view.setSpacing(1);w.thumbs=QListWidget();w.thumbs.setFixedWidth(108);w.thumbs.setIconSize(QSize(72,98));w.thumbs.setViewMode(QListView.ViewMode.IconMode);w.thumbs.setFlow(QListView.Flow.TopToBottom);w.thumbs.setWrapping(False);w.thumbs.setResizeMode(QListView.ResizeMode.Adjust);w.thumbs.setMovement(QListView.Movement.Static);w.thumbs.setGridSize(QSize(102,140));w.thumbs.currentRowChanged.connect(w.thumbnail_selected);w.thumbs.hide();view.addWidget(w.thumbs)
-    w.scroll=QScrollArea();w.scroll.setWidgetResizable(True);w.image=QLabel();w.image.setAlignment(Qt.AlignmentFlag.AlignHCenter|Qt.AlignmentFlag.AlignTop);w.image.setStyleSheet('background:#e7eef6;padding:12px;color:#617590;font-size:18px');w.scroll.setWidget(w.image);view.addWidget(w.scroll,1);outer.addLayout(view,1)
+    view=QHBoxLayout();view.setSpacing(1);w.thumbs=QListWidget();w.thumbs.setFixedWidth(148);w.thumbs.setIconSize(QSize(96,130));w.thumbs.setViewMode(QListView.ViewMode.IconMode);w.thumbs.setFlow(QListView.Flow.TopToBottom);w.thumbs.setWrapping(False);w.thumbs.setResizeMode(QListView.ResizeMode.Adjust);w.thumbs.setMovement(QListView.Movement.Static);w.thumbs.setGridSize(QSize(140,166));w.thumbs.currentRowChanged.connect(w.thumbnail_selected);view.addWidget(w.thumbs)
+    w.scroll=QScrollArea();w.scroll.setWidgetResizable(True);w.image=QLabel();w.image.setAlignment(Qt.AlignmentFlag.AlignHCenter|Qt.AlignmentFlag.AlignTop);w.image.setStyleSheet('background:#e9eef5;padding:12px;color:#617590;font-size:18px');w.scroll.setWidget(w.image);view.addWidget(w.scroll,1)
+    panel = QFrame(); panel.setObjectName('card'); panel.setFixedWidth(278)
+    side = QVBoxLayout(panel); side.setContentsMargins(18,22,18,20); side.setSpacing(16)
+    heading = QLabel('Assinar documento'); heading.setObjectName('heading'); side.addWidget(heading)
+    hint = QLabel('Escolha o método de assinatura.'); hint.setObjectName('muted'); hint.setWordWrap(True); side.addWidget(hint)
+    methods = QHBoxLayout(); methods.setSpacing(8)
+    for label, symbol, method in [('Certificado','cert',0),('CPF','user',1)]:
+        b = w.button(methods,label,lambda checked=False,m=method:w.open_method(m),'secondary')
+        b.setIcon(icon(symbol,'#075be8')); b.setToolTip('Assinar com '+label)
+    side.addLayout(methods)
+    description = QLabel('Posicione sua chancela na etapa de assinatura. Você pode ajustar a página e o local antes de confirmar.'); description.setWordWrap(True); description.setObjectName('muted'); side.addWidget(description)
+    side.addStretch()
+    verify = w.button(side,'Verificar assinaturas',w.verify); verify.setIcon(icon('cert'))
+    info = w.button(side,'Detalhes do documento',w.show_details); info.setIcon(icon('info'))
+    view.addWidget(panel); outer.addLayout(view,1)
     w.label=QLabel('Documentos processados no seu computador');w.label.setObjectName('muted');outer.addWidget(w.label)
     w.details_dialog=QDialog(w);w.details_dialog.setWindowTitle('Detalhes do documento');w.details_dialog.resize(650,480);d=QVBoxLayout(w.details_dialog)
     w.audit_desc=QLabel('Abra um PDF ou XML de NF-e modelo 55.');w.audit_desc.setWordWrap(True);d.addWidget(w.audit_desc)

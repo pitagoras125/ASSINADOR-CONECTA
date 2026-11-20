@@ -1,4 +1,4 @@
-name: Conecta PDF Windows 1.1.0
+name: Conecta PDF Windows 1.2.0
 on:
   workflow_dispatch:
   push:
@@ -39,6 +39,6 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
         with:
-          name: Conecta-PDF-1.1.0-Instalador-Windows
+          name: Conecta-PDF-1.2.0-Instalador-Windows
           path: Output/*.exe
           retention-days: 7
