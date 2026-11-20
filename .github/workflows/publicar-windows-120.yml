@@ -1,0 +1,26 @@
+name: Publicar Windows 1.2.0
+on:
+  push:
+    paths: ['.github/workflows/publicar-windows-120.yml']
+permissions:
+  actions: read
+  contents: write
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Aguardar testes e compilação da versão revisada
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh run watch 44807626563 --exit-status
+          test "$(gh api repos/$GH_REPO/actions/runs/44807626563 --jq .head_sha)" = "fc017a29f69ee7c5e4fe05c55473b2aaf5d8eb5b"
+          gh run download 44807626563 -n Conecta-PDF-1.2.0-Instalador-Windows -D release
+          cd release
+          test -s Instalar_Conecta_PDF_1.2.0.exe
+          sha256sum Instalar_Conecta_PDF_1.2.0.exe > SHA256SUMS.txt
+          gh release create v1.2.0 Instalar_Conecta_PDF_1.2.0.exe SHA256SUMS.txt --target fc017a29f69ee7c5e4fe05c55473b2aaf5d8eb5b --draft --title 'Conecta PDF 1.2.0 para Windows' --notes 'Interface branca e azul, ferramentas com ícones e nomes, miniaturas maiores e atalhos Certificado/CPF lado a lado. Chancela, funções de PDF, scanner e assinatura preservados. Testes automatizados e inicialização do EXE verificados no Windows.'
+          gh release edit v1.2.0 --draft=false --latest
