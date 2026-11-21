@@ -85,108 +85,67 @@ def apply_light_palette():
     QApplication.instance().setPalette(palette)
 
 def build_shell(w):
+    from PySide6.QtWidgets import QSpinBox,QSlider
+    from inline_preview import DocumentPreview
     apply_light_palette()
-    w.dialog.setObjectName('signatureDialog')
     old=w.takeCentralWidget();root=QWidget();root.setObjectName('surface');w.setCentralWidget(root)
-    close_path=(Path(__file__).parent/'assets/close.svg').as_posix();w.setStyleSheet(STYLE.replace('__CLOSE__',close_path)+"QPushButton#tab{font-size:13px;padding:20px 12px;background:#edf4ff;border:1px solid #d5e5fc} QPushButton#tab:checked{background:#dcecff;border:1px solid #1673f5} QPushButton#nav:checked{border-left:0;border-bottom:3px solid #0867ff}")
-    w.actions=[];outer=QVBoxLayout(root);outer.setContentsMargins(18,12,18,10);outer.setSpacing(10)
-    masthead = QFrame()
-    masthead.setStyleSheet('QFrame {background: white; border: none;}')
-    header = QHBoxLayout(masthead)
-    header.setContentsMargins(12, 5, 8, 5)
-    header.setSpacing(12)
-    logo = QPixmap(str(Path(__file__).parent / 'assets/logo-conecta-pdf.png'))
-    for bounds in [(26, 28, 140, 152), (172, 55, 438, 68)]:
-        part = QLabel()
-        section = logo.copy(*bounds)
-        part.setPixmap(section.scaledToHeight(47 if bounds[0] == 26 else 22, Qt.TransformationMode.SmoothTransformation))
-        header.addWidget(part)
-    header.addSpacing(25)
-    for name,label,fn in [('home','Início',w.home),('file','Documentos',w.open_pdf),('clock','Recentes',w.recent),('settings','Configurações',w.preferences)]:
-        b=w.button(header,label,fn,'nav');b.setIcon(icon(name));b.setIconSize(QSize(21,21));b.setCheckable(True);b.setAutoExclusive(True);b.setChecked(name=='home')
-    header.addStretch();w.launch=w.button(header,'Assinar',w.open_signing,'primary');w.launch.setIcon(icon('pen','white'));w.launch.setIconSize(QSize(23,23));w.launch.setMinimumWidth(135);outer.addWidget(masthead)
-    w.tabs=QTabBar();w.tabs.setExpanding(False);w.tabs.setTabsClosable(True);w.tabs.setElideMode(Qt.TextElideMode.ElideMiddle);w.tabs.setUsesScrollButtons(True);w.tabs.currentChanged.connect(w.switch_tab);w.tabs.tabCloseRequested.connect(w.close_tab);outer.addWidget(w.tabs)
-    strip = QFrame()
-    strip.setStyleSheet("QFrame {background: white;} QToolButton {background: transparent; border: none; border-radius: 7px;} QToolButton:hover, QToolButton:focus {background: #e6f0ff;} QToolButton:pressed {background: #ccdef8;}")
-    toolbar = QHBoxLayout(strip)
-    toolbar.setContentsMargins(10, 5, 10, 5)
-    toolbar.setSpacing(3)
-
-    def action(symbol, label, callback):
-        button = QToolButton()
-        button.setIcon(icon(symbol))
-        button.setIconSize(QSize(22, 22))
-        button.setText({'Abrir documento':'Abrir','Salvar PDF':'Salvar','Girar visualização':'Girar','Mostrar páginas':'Páginas','Documento para PDF':'Converter','Exportar PDF para texto ou imagens':'Exportar','Assinar em lote':'Lote','Imagens para PDF':'Imagens'}.get(label,label))
-        button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
-        button.setMinimumSize(64, 62)
-        if symbol in ('left','right'):
-            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-            button.setMinimumSize(32,32)
-            button.setFixedSize(32,32)
-        button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        button.setToolTip(label)
-        button.setAccessibleName(label)
-        button.clicked.connect(callback)
-        toolbar.addWidget(button)
-        w.actions.append(button)
-
-    groups = [
-        [('folder','Abrir documento',w.open_pdf), ('save','Salvar PDF',w.save_pdf), ('print','Imprimir',w.print_pdf)],
-        [('merge','Juntar PDFs',w.merge_pdfs), ('split','Separar PDF',w.split_pdf), ('image','Imagens para PDF',w.convert_images), ('scan','Digitalizar',w.scan_document)],
-        [('file','Documento para PDF',lambda: convert(w)), ('save','Exportar PDF para texto ou imagens',lambda: convert(w, True))],
-        [('pen','Assinar em lote',w.open_batch), ('search','Pesquisar',w.toggle_search), ('rotate','Girar visualização',w.rotate), ('pages','Mostrar páginas',lambda: w.thumbs.setVisible(not w.thumbs.isVisible())), ('info','Detalhes',w.show_details)],
-    ]
-    for group in groups:
-        for entry in group:
-            action(*entry)
-        if group is not groups[-1]:
-            divider = QFrame()
-            divider.setFrameShape(QFrame.Shape.VLine)
-            toolbar.addWidget(divider)
-        toolbar.addSpacing(4)
-    tool_scroll = QScrollArea()
-    tool_scroll.setWidgetResizable(True)
-    tool_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-    tool_scroll.setWidget(strip)
-    tool_scroll.setFixedHeight(86)
-    outer.addWidget(tool_scroll)
-    navigation = QFrame()
-    navigation.setStyleSheet('QToolButton {background:transparent;border:0;border-radius:6px;padding:6px} QToolButton:hover {background:#e6f0ff}')
-    toolbar = QHBoxLayout(navigation)
-    toolbar.setContentsMargins(4,0,4,0)
-    caption = QLabel('ÁREA DO DOCUMENTO')
-    caption.setObjectName('muted')
-    toolbar.addWidget(caption)
-    toolbar.addStretch()
-    w.zoom = QComboBox()
-    w.zoom.addItems(['Página inteira','Ajustar largura','75%','100%','125%','150%','200%'])
-    w.zoom.currentTextChanged.connect(w.change_zoom)
-    toolbar.addWidget(w.zoom)
-    action('left','Página anterior',lambda: w.move(-1))
-    w.pagination = QLabel('0 / 0')
-    toolbar.addWidget(w.pagination)
-    action('right','Próxima página',lambda: w.move(1))
-    outer.addWidget(navigation)
-    w.search_bar=QWidget();search=QHBoxLayout(w.search_bar);search.setContentsMargins(0,0,0,0);w.query=QLineEdit();w.query.setPlaceholderText('Pesquisar no documento…');w.query.returnPressed.connect(w.find_text);search.addWidget(w.query);w.button(search,'Localizar',w.find_text);w.button(search,'Fechar',w.search_bar.hide);w.search_bar.hide();outer.addWidget(w.search_bar)
-    view=QHBoxLayout();view.setSpacing(1);w.thumbs=QListWidget();w.thumbs.setFixedWidth(148);w.thumbs.setIconSize(QSize(96,130));w.thumbs.setViewMode(QListView.ViewMode.IconMode);w.thumbs.setFlow(QListView.Flow.TopToBottom);w.thumbs.setWrapping(False);w.thumbs.setResizeMode(QListView.ResizeMode.Adjust);w.thumbs.setMovement(QListView.Movement.Static);w.thumbs.setGridSize(QSize(140,166));w.thumbs.currentRowChanged.connect(w.thumbnail_selected);view.addWidget(w.thumbs)
-    w.scroll=QScrollArea();w.scroll.setWidgetResizable(True);w.image=QLabel();w.image.setAlignment(Qt.AlignmentFlag.AlignHCenter|Qt.AlignmentFlag.AlignTop);w.image.setStyleSheet('background:#e9eef5;padding:12px;color:#617590;font-size:18px');w.scroll.setWidget(w.image);view.addWidget(w.scroll,1)
-    panel = QFrame(); panel.setObjectName('card'); panel.setFixedWidth(278)
-    side = QVBoxLayout(panel); side.setContentsMargins(18,22,18,20); side.setSpacing(16)
-    heading = QLabel('Assinar documento'); heading.setObjectName('heading'); side.addWidget(heading)
-    hint = QLabel('Escolha o método de assinatura.'); hint.setObjectName('muted'); hint.setWordWrap(True); side.addWidget(hint)
-    methods = QHBoxLayout(); methods.setSpacing(8)
-    for label, symbol, method in [('Certificado','cert',0),('CPF','user',1)]:
-        b = w.button(methods,label,lambda checked=False,m=method:w.open_method(m),'secondary')
-        b.setIcon(icon(symbol,'#075be8')); b.setToolTip('Assinar com '+label)
+    close_path=(Path(__file__).parent/'assets/close.svg').as_posix()
+    w.setStyleSheet(STYLE.replace('__CLOSE__',close_path)+"""
+QWidget{font-size:13px} QFrame#masthead{background:#102344}
+QFrame#masthead QLabel{color:white;font-size:19px;font-weight:700}
+QTabBar::tab{background:#344865;color:#e8eef9;padding:10px 16px;margin:3px 3px 0 0;min-width:120px;max-width:240px;border:0;border-top-left-radius:8px;border-top-right-radius:8px}
+QTabBar::tab:selected{background:#f6f8fc;color:#0054de;border:0}
+QPushButton#headerAction{color:white;background:transparent;border:0;padding:7px}
+QFrame#card{border-radius:0;border:0;border-left:1px solid #d5dfed;background:white}
+QPushButton#tab{padding:9px 8px;border:1px solid #ccd7e7;border-radius:5px;background:white;text-align:center}
+QPushButton#tab:checked{background:#dceaff;color:#0055e8;border-color:#1467ff;font-weight:600}
+QPushButton#primary{padding:11px;font-size:14px;text-align:center}
+QLabel#heading{font-size:19px} QListWidget{background:#f8faff}
+QCheckBox{spacing:7px} QSpinBox{background:white;border:1px solid #dbe6f6;padding:6px;border-radius:5px}
+QSlider::groove:horizontal{height:5px;background:#d4dce6;border-radius:2px} QSlider::sub-page:horizontal{background:#0872ff} QSlider::handle:horizontal{background:white;border:1px solid #0872ff;width:16px;margin:-6px 0;border-radius:8px}
+""")
+    w.actions=[];outer=QVBoxLayout(root);outer.setContentsMargins(0,0,0,0);outer.setSpacing(0)
+    masthead=QFrame();masthead.setObjectName('masthead');header=QHBoxLayout(masthead);header.setContentsMargins(15,4,10,0);header.setSpacing(10)
+    logo=QLabel();logo.setPixmap(QPixmap(str(Path(__file__).parent/'assets/app_icon.png')).scaled(32,32,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation));header.addWidget(logo)
+    header.addWidget(QLabel('Conecta PDF'));header.addSpacing(14)
+    w.tabs=QTabBar();w.tabs.setExpanding(False);w.tabs.setTabsClosable(True);w.tabs.setElideMode(Qt.TextElideMode.ElideMiddle);w.tabs.setUsesScrollButtons(True);w.tabs.currentChanged.connect(w.switch_tab);w.tabs.tabCloseRequested.connect(w.close_tab);header.addWidget(w.tabs,1)
+    w.button(header,'+',w.open_pdf,'headerAction').setToolTip('Abrir documento em uma nova aba')
+    w.button(header,'Recentes',w.recent,'headerAction')
+    w.button(header,'⚙  Configurações',w.preferences,'headerAction');outer.addWidget(masthead)
+    strip=QFrame();strip.setStyleSheet('QFrame{background:#f9fbff} QToolButton{background:transparent;border:0;border-radius:5px;padding:3px} QToolButton:hover{background:#e2ecff}')
+    toolbar=QHBoxLayout(strip);toolbar.setContentsMargins(10,4,10,4);toolbar.setSpacing(4)
+    def action(symbol,label,callback):
+        b=QToolButton();b.setIcon(icon(symbol));b.setIconSize(QSize(23,23));b.setText(label);b.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon);b.setMinimumSize(58,52);b.setToolTip(label);b.setAccessibleName(label);b.clicked.connect(callback);toolbar.addWidget(b);w.actions.append(b)
+    for symbol,label,fn in [('folder','Abrir',w.open_pdf),('save','Salvar',w.save_pdf),('print','Imprimir',w.print_pdf),('merge','Juntar',w.merge_pdfs),('split','Separar',w.split_pdf),('image','Imagens para PDF',w.convert_images),('file','Converter',lambda:convert(w)),('save','Exportar',lambda:convert(w,True)),('scan','Digitalizar',w.scan_document),('pen','Assinar em lote',w.open_batch),('rotate','Girar',w.rotate),('search','Pesquisar',w.toggle_search),('pages','Páginas',lambda:w.pages_panel.setVisible(not w.pages_panel.isVisible())),('info','Detalhes',w.show_details)]:action(symbol,label,fn)
+    toolbar.addStretch();w.launch=w.button(toolbar,'Assinar',w.open_signing,'primary');w.launch.setIcon(icon('pen','white'));w.launch.setMinimumWidth(110)
+    tool_scroll=QScrollArea();tool_scroll.setWidgetResizable(True);tool_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff);tool_scroll.setWidget(strip);tool_scroll.setFixedHeight(76);outer.addWidget(tool_scroll)
+    w.search_bar=QWidget();search=QHBoxLayout(w.search_bar);w.query=QLineEdit();w.query.setPlaceholderText('Pesquisar no documento…');w.query.returnPressed.connect(w.find_text);search.addWidget(w.query);w.button(search,'Localizar',w.find_text);w.button(search,'Fechar',w.search_bar.hide);w.search_bar.hide();outer.addWidget(w.search_bar)
+    view=QHBoxLayout();view.setSpacing(0);view.setContentsMargins(0,0,0,0)
+    w.pages_panel=QWidget();w.pages_panel.setFixedWidth(166);pages=QVBoxLayout(w.pages_panel);pages.setContentsMargins(8,14,8,0);title=QLabel('Páginas');title.setObjectName('heading');pages.addWidget(title)
+    w.thumbs=QListWidget();w.thumbs.setIconSize(QSize(112,150));w.thumbs.setViewMode(QListView.ViewMode.IconMode);w.thumbs.setFlow(QListView.Flow.TopToBottom);w.thumbs.setWrapping(False);w.thumbs.setResizeMode(QListView.ResizeMode.Adjust);w.thumbs.setMovement(QListView.Movement.Static);w.thumbs.setGridSize(QSize(142,184));w.thumbs.currentRowChanged.connect(w.thumbnail_selected);pages.addWidget(w.thumbs);view.addWidget(w.pages_panel)
+    w.scroll=QScrollArea();w.scroll.setWidgetResizable(True);w.image=DocumentPreview(w);w.image.setAlignment(Qt.AlignmentFlag.AlignCenter);w.image.setStyleSheet('background:#e4eaf3;color:#617590;font-size:17px');w.scroll.setWidget(w.image);view.addWidget(w.scroll,1)
+    panel=QFrame();panel.setObjectName('card');panel.setFixedWidth(310);side=QVBoxLayout(panel);side.setContentsMargins(16,18,16,14);side.setSpacing(12)
+    heading=QLabel('Assinar documento');heading.setObjectName('heading');side.addWidget(heading)
+    methods=QHBoxLayout();methods.setSpacing(0)
+    for button,label in [(w.cert_choice,'Certificado'),(w.cpf_choice,'CPF')]:button.setText(label);button.setIcon(QIcon());methods.addWidget(button)
     side.addLayout(methods)
-    description = QLabel('Posicione sua chancela na etapa de assinatura. Você pode ajustar a página e o local antes de confirmar.'); description.setWordWrap(True); description.setObjectName('muted'); side.addWidget(description)
-    side.addStretch()
-    verify = w.button(side,'Verificar assinaturas',w.verify); verify.setIcon(icon('cert'))
-    info = w.button(side,'Detalhes do documento',w.show_details); info.setIcon(icon('info'))
-    view.addWidget(panel); outer.addLayout(view,1)
-    w.label=QLabel('Documentos processados no seu computador');w.label.setObjectName('muted');outer.addWidget(w.label)
+    # Move the existing form and signing button: preserve all validation and signing callbacks.
+    form_scroll=QScrollArea();form_scroll.setWidgetResizable(True);form_scroll.setStyleSheet('QScrollArea{background:white;border:0}');form_scroll.setWidget(w.form);w.form.layout().setContentsMargins(0,0,0,0);w.form.layout().setSpacing(9);w.form.layout().setAlignment(Qt.AlignmentFlag.AlignTop);side.addWidget(form_scroll,1)
+    w.options.hide();w.cert_heading.setText('Selecionar certificado');w.refresh.setText('Atualizar');w.certs.setMinimumHeight(75);w.certs.setMaximumHeight(100)
+    w.sign_page=QSpinBox();w.sign_page.setRange(1,1);w.sign_page.valueChanged.connect(w.sign_page_changed)
+    w.seal_size=QSlider(Qt.Orientation.Horizontal);w.seal_size.setRange(100,460);w.seal_size.setValue(350);w.seal_size.valueChanged.connect(w.resize_seal)
+    controls=QHBoxLayout();page_col=QVBoxLayout();page_col.addWidget(QLabel('Página'));page_col.addWidget(w.sign_page);controls.addLayout(page_col);size_col=QVBoxLayout();size_col.addWidget(QLabel('Tamanho'));size_col.addWidget(w.seal_size);controls.addLayout(size_col,1);side.addLayout(controls)
+    w.preview_hint=QLabel('Arraste a chancela no documento para posicionar.');w.preview_hint.setWordWrap(True);w.preview_hint.setStyleSheet('background:#edf3fb;padding:10px;border-radius:6px;color:#32496a');side.addWidget(w.preview_hint)
+    w.sign.setText('Assinar documento');w.sign.setIcon(QIcon());side.addWidget(w.sign)
+    w.button(side,'Verificar assinaturas',w.verify)
+    w.signature_panel=panel;view.addWidget(panel);outer.addLayout(view,1)
+    footer=QFrame();footer.setStyleSheet('QFrame{background:#f9fbff;border-top:1px solid #d7e0ed}');bottom=QHBoxLayout(footer);bottom.setContentsMargins(14,5,14,5)
+    w.label=QLabel('Processamento local');w.label.setObjectName('muted');bottom.addWidget(w.label,1)
+    w.button(bottom,'‹',lambda:w.move(-1),'icon');w.pagination=QLabel('0 / 0');bottom.addWidget(w.pagination);w.button(bottom,'›',lambda:w.move(1),'icon')
+    w.zoom=QComboBox();w.zoom.addItems(['Página inteira','Ajustar largura','75%','100%','125%','150%','200%']);w.zoom.currentTextChanged.connect(w.change_zoom);bottom.addWidget(w.zoom);bottom.addStretch()
+    credit=QLabel('DESENVOLVIDO POR AVANTE SISTEMAS LTDA\nCNPJ 54.713.453/0001-94');credit.setStyleSheet('font-size:9px;font-weight:600');credit.setAlignment(Qt.AlignmentFlag.AlignRight);bottom.addWidget(credit);outer.addWidget(footer)
     w.details_dialog=QDialog(w);w.details_dialog.setWindowTitle('Detalhes do documento');w.details_dialog.resize(650,480);d=QVBoxLayout(w.details_dialog)
-    w.audit_desc=QLabel('Abra um PDF ou XML de NF-e modelo 55.');w.audit_desc.setWordWrap(True);d.addWidget(w.audit_desc)
-    w.status=QLabel('Assinatura: não verificada');w.status.setWordWrap(True);d.addWidget(w.status)
-    w.detected=QLabel('Assinaturas');d.addWidget(w.detected);w.report=QTextEdit();w.report.setReadOnly(True);d.addWidget(w.report,1);w.button(d,'Verificar assinaturas',w.verify);w.button(d,'Conferir no VALIDAR ITI ↗',lambda:w.open_url('https://validar.iti.gov.br/'))
+    w.audit_desc=QLabel('Abra um PDF ou XML de NF-e modelo 55.');w.audit_desc.setWordWrap(True);d.addWidget(w.audit_desc);w.status=QLabel('Assinatura: não verificada');w.status.setWordWrap(True);d.addWidget(w.status);w.detected=QLabel('Assinaturas');d.addWidget(w.detected);w.report=QTextEdit();w.report.setReadOnly(True);d.addWidget(w.report,1);w.button(d,'Verificar assinaturas',w.verify);w.button(d,'Conferir no VALIDAR ITI ↗',lambda:w.open_url('https://validar.iti.gov.br/'))
+    w.inline_signing=True;w.visible.toggled.connect(w.image.update);w.name.textChanged.connect(w.image.invalidate_seal);w.mode.currentIndexChanged.connect(w.image.invalidate_seal)
+    w.update_mode();w.form.show();w.sign.show();w.signature_panel.setEnabled(False)
     old.deleteLater();return root

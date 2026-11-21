@@ -281,7 +281,7 @@ QScrollBar:vertical{background:#f1f3f6;width:9px} QScrollBar::handle:vertical{ba
         key=str(Path(self.path).resolve())
         if self.batch_paths:
             self.start_batch(mode);return
-        if mode==2 or self.visible.isChecked():
+        if (mode==2 or self.visible.isChecked()) and not (getattr(self,'inline_signing',False) and key in self.placements):
             from ui_features import PositionDialog
             try:dialog=PositionDialog(self.path,self,self.placements.get(key),preview_name=self.name.text() or 'NOME DO ASSINANTE',method='cpf' if mode==2 else 'cert')
             except Exception as exc:QMessageBox.warning(self,'PDF não disponível',str(exc));return

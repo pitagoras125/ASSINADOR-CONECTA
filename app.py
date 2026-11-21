@@ -20,7 +20,7 @@ class Window(SigningWindow):
         self.fit_page=True
         root=build_shell(self)
         self.blur=QGraphicsBlurEffect();self.blur.setEnabled(False);self.blur.setBlurRadius(3);root.setGraphicsEffect(self.blur)
-        self.dialog.setFixedWidth(650);self.cert_choice.setText('Assinar com Certificado Digital');self.cpf_choice.setText('Assinar com CPF')
+        self.dialog.setFixedWidth(650)
         self.ready=True;self.home()
         self.birth.setInputMask('00/00/0000;_')
         from update_ui import Updates
@@ -54,7 +54,7 @@ class Window(SigningWindow):
         if self.pdf:return
         self.image.setText('Seus documentos, em um só lugar\n\nArraste um PDF ou XML de NF-e modelo 55\nou clique em Abrir para começar.')
     def preferences(self):
-        box=QMessageBox(self);box.setWindowTitle('Configurações');box.setText('Conecta PDF 1.2.0\nDESENVOLVIDO POR AVANTE SISTEMAS LTDA\nCNPJ 54.713.453/0001-94\n\nPara usar como leitor padrão, instale o aplicativo e escolha Conecta PDF nas configurações de aplicativos padrão do Windows.\n\nOs arquivos são processados localmente. CPF é um registro declaratório, sem autenticação de identidade.');box.addButton('Fechar',QMessageBox.ButtonRole.RejectRole)
+        box=QMessageBox(self);box.setWindowTitle('Configurações');box.setText('Conecta PDF 1.3.0\nDESENVOLVIDO POR AVANTE SISTEMAS LTDA\nCNPJ 54.713.453/0001-94\n\nPara usar como leitor padrão, instale o aplicativo e escolha Conecta PDF nas configurações de aplicativos padrão do Windows.\n\nOs arquivos são processados localmente. CPF é um registro declaratório, sem autenticação de identidade.');box.addButton('Fechar',QMessageBox.ButtonRole.RejectRole)
         clear=box.addButton('Limpar recentes',QMessageBox.ButtonRole.ActionRole)
         updates=box.addButton('Verificar atualizações',QMessageBox.ButtonRole.ActionRole)
         toggle=box.addButton('Desativar atualizações automáticas' if self.settings.value('automatic_updates',True,type=bool) else 'Ativar atualizações automáticas',QMessageBox.ButtonRole.ActionRole)
@@ -143,7 +143,7 @@ class Window(SigningWindow):
         for i in range(len(self.pdf)):
             item=QListWidgetItem(str(i+1));item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             if i<150:
-                page=self.pdf[i];bitmap=page.render(scale=72/page.get_width());pil=bitmap.to_pil().convert('RGB');im=QImage(pil.tobytes(),pil.width,pil.height,pil.width*3,QImage.Format.Format_RGB888).copy();item.setIcon(QIcon(QPixmap.fromImage(im)));bitmap.close();page.close()
+                page=self.pdf[i];bitmap=page.render(scale=112/page.get_width());pil=bitmap.to_pil().convert('RGB');im=QImage(pil.tobytes(),pil.width,pil.height,pil.width*3,QImage.Format.Format_RGB888).copy();item.setIcon(QIcon(QPixmap.fromImage(im)));bitmap.close();page.close()
             self.thumbs.addItem(item)
         self.thumbs.setCurrentRow(self.page);self.thumbs.blockSignals(False);self.render()
     def close_tab(self,index):
@@ -151,7 +151,7 @@ class Window(SigningWindow):
         if self.pdf:self.pdf.close();self.pdf=None
         self.documents.pop(index);self.active=-1;self.tabs.blockSignals(True);self.tabs.removeTab(index);self.tabs.blockSignals(False)
         if self.documents:self.activate(self.tabs.currentIndex())
-        else:self.path=None;self.thumbs.clear();self.pagination.setText('0 / 0');self.image.clear();self.report.clear();self.audit_desc.setText('Abra um PDF ou XML.');self.status.setText('Nenhum documento aberto');self.home()
+        else:self.path=None;self.signature_panel.setEnabled(False);self.image.cache_key=None;self.thumbs.clear();self.pagination.setText('0 / 0');self.image.clear();self.report.clear();self.audit_desc.setText('Abra um PDF ou XML.');self.status.setText('Nenhum documento aberto');self.home()
     def thumbnail_selected(self,row):
         if self.pdf and row>=0:self.page=row;self.render()
     def change_zoom(self,text):
@@ -168,7 +168,7 @@ class Window(SigningWindow):
         fit_width=(self.scroll.viewport().width()-34)/width
         scale=self.zoom_factor or max(.15,min(2.0,fit_width,(self.scroll.viewport().height()-30)/height if self.fit_page else 2.0))
         bitmap=page.render(scale=scale,rotation=self.rotation,draw_annots=True);pil=bitmap.to_pil().convert('RGB');im=QImage(pil.tobytes(),pil.width,pil.height,pil.width*3,QImage.Format.Format_RGB888).copy();self.image.setPixmap(QPixmap.fromImage(im));bitmap.close();page.close()
-        self.pagination.setText(f'{self.page+1} / {len(self.pdf)}');self.thumbs.blockSignals(True);self.thumbs.setCurrentRow(self.page);self.thumbs.blockSignals(False)
+        self.image.sync();self.pagination.setText(f'{self.page+1} / {len(self.pdf)}');self.thumbs.blockSignals(True);self.thumbs.setCurrentRow(self.page);self.thumbs.blockSignals(False)
         name=Path(self.documents[self.active]['source']).name if self.active>=0 else Path(self.path).name
         self.label.setText(name+'  •  '+str(len(self.pdf))+' página(s)  •  Processamento local')
     def find_text(self):
@@ -204,24 +204,38 @@ class Window(SigningWindow):
                 if i>first:printer.newPage()
                 page=self.pdf[i];bitmap=page.render(scale=2.5,draw_annots=True);pil=bitmap.to_pil().convert('RGB');im=QImage(pil.tobytes(),pil.width,pil.height,pil.width*3,QImage.Format.Format_RGB888).copy();rect=printer.pageRect(QPrinter.Unit.DevicePixel).toRect();size=im.size().scaled(rect.size(),Qt.AspectRatioMode.KeepAspectRatio);rect.setSize(size);painter.drawImage(rect,im);bitmap.close();page.close()
         finally:painter.end()
+    def update_mode(self):
+        super().update_mode()
+        if not getattr(self,'inline_signing',False):return
+        self.options.hide();self.source.setVisible(self.signing_mode()!=2)
+        self.visible.show();self.position.hide();self.coords.hide()
+        self.mouse_button.setText('Posição e repetição em outras páginas')
+        self.info.setStyleSheet('font-size:11px;color:#526580;background:transparent;padding:3px')
+        self.form.show();self.sign.show()
     def open_signing(self):
         if self.busy():return
         if not self.path:
             QMessageBox.information(self,'Abrir documento','Abra um PDF ou XML antes de assinar.');return
-        self.advanced=False
-        self.cert_choice.setChecked(False);self.cpf_choice.setChecked(False)
-        self.form.hide();self.sign.setEnabled(False);self.sign.hide()
-        self.blur.setEnabled(True);self.overlay.setGeometry(self.centralWidget().geometry());self.overlay.show();self.overlay.raise_()
-        self.dialog.adjustSize();self.dialog.move(self.mapToGlobal(self.rect().center())-self.dialog.rect().center());self.dialog.show();self.dialog.raise_();self.dialog.activateWindow()
+        self.rotation=0;self.render();self.select_method(self.mode.currentIndex())
+        self.signature_panel.setFocus()
     def select_method(self,index):
-        super().select_method(index)
-        self.sign.show();self.dialog.adjustSize()
-        self.dialog.move(self.mapToGlobal(self.rect().center())-self.dialog.rect().center())
+        if not getattr(self,'inline_signing',False):
+            return super().select_method(index)
+        self.mode.setCurrentIndex(index);self.cert_choice.setChecked(index==0);self.cpf_choice.setChecked(index==1)
+        self.update_mode()
+        if self.path:
+            self.rotation=0;self.render();self.image.ensure_placement()
+        if index==0 and self.source.currentIndex()==0 and sys.platform=='win32' and not self.busy():self.refresh_certs()
     def open_method(self,method):
-        if self.busy():return
-        self.open_signing()
-        if self.path:self.select_method(method)
+        if self.path and not self.busy():self.select_method(method)
+    def sign_page_changed(self,value):
+        if self.pdf:
+            self.page=value-1;self.rotation=0;self.render();self.image.ensure_placement()
+    def resize_seal(self,value):
+        if self.pdf and not self.busy():self.image.resize_seal(value)
     def sign_document(self):
+        if self.busy():return
+        if self.path and (self.signing_mode()==2 or self.visible.isChecked()):self.image.ensure_placement()
         if self.signing_mode()==2 and self.path and not self.batch_paths:
             from engine import inspect_pdf
             try:signed=bool(inspect_pdf(self.path))
@@ -245,9 +259,9 @@ class Window(SigningWindow):
         def complete(result):
             # Base completion callbacks load generated outputs while worker may still be finishing.
             self.job.wait();callback(result)
-        self.tabs.setEnabled(False);super().run_job(operation,complete)
+        self.signature_panel.setEnabled(False);self.tabs.setEnabled(False);super().run_job(operation,complete)
     def finished(self):
-        super().finished();self.tabs.setEnabled(True)
+        super().finished();self.tabs.setEnabled(True);self.signature_panel.setEnabled(bool(self.path))
     def dragEnterEvent(self,event):
         if not self.busy() and event.mimeData().hasUrls() and all(u.isLocalFile() and Path(u.toLocalFile()).suffix.lower() in ('.pdf','.xml') for u in event.mimeData().urls()):event.acceptProposedAction()
     def dropEvent(self,event):
