@@ -29,7 +29,13 @@ class DocumentPreview(QLabel):
         if not w.path:return
         current=self.placement()
         if not current or current['page_index']!=w.page:
-            _,box=choose_placement(w.path,w.page)
+            try:
+                _,box=choose_placement(w.path,w.page)
+            except ValueError:
+                # Keep manual placement available even when existing seals fill the page.
+                self.sync()
+                width=min(460,self.g['width']-20,(self.g['height']-20)*460/140)
+                box=validate_box(self.reader,w.page,display_to_pdf(self.g,[10,10,width,width*140/460]))
             w.placements[str(Path(w.path).resolve())]=dict(page_index=w.page,box=box)
             w.position.setCurrentIndex(1)
         self.sync()

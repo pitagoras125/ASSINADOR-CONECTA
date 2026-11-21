@@ -39,3 +39,16 @@ def test_inline_drag_resize_and_sign(material,monkeypatch):
         w.close_tab(w.tabs.currentIndex());w.close_tab(0)
         assert w.path is None and not w.signature_panel.isEnabled()
     finally:w.close();application.processEvents()
+
+
+def test_full_page_keeps_manual_placement_available(material,monkeypatch):
+    pdf,_,_=material
+    application=QApplication.instance() or QApplication([])
+    w=Window();w.show();application.processEvents();w.load(str(pdf))
+    import inline_preview
+    monkeypatch.setattr(inline_preview,'choose_placement',lambda *a:(_ for _ in ()).throw(ValueError('Sem espaço livre')))
+    try:
+        w.select_method(1)
+        assert w.image.placement() is not None
+        assert w.image.display_rect() is not None
+    finally:w.close();application.processEvents()

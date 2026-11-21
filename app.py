@@ -54,7 +54,7 @@ class Window(SigningWindow):
         if self.pdf:return
         self.image.setText('Seus documentos, em um só lugar\n\nArraste um PDF ou XML de NF-e modelo 55\nou clique em Abrir para começar.')
     def preferences(self):
-        box=QMessageBox(self);box.setWindowTitle('Configurações');box.setText('Conecta PDF 1.3.0\nDESENVOLVIDO POR AVANTE SISTEMAS LTDA\nCNPJ 54.713.453/0001-94\n\nPara usar como leitor padrão, instale o aplicativo e escolha Conecta PDF nas configurações de aplicativos padrão do Windows.\n\nOs arquivos são processados localmente. CPF é um registro declaratório, sem autenticação de identidade.');box.addButton('Fechar',QMessageBox.ButtonRole.RejectRole)
+        box=QMessageBox(self);box.setWindowTitle('Configurações');box.setText('Conecta PDF 1.3.1\nDESENVOLVIDO POR AVANTE SISTEMAS LTDA\nCNPJ 54.713.453/0001-94\n\nPara usar como leitor padrão, instale o aplicativo e escolha Conecta PDF nas configurações de aplicativos padrão do Windows.\n\nOs arquivos são processados localmente. CPF é um registro declaratório, sem autenticação de identidade.');box.addButton('Fechar',QMessageBox.ButtonRole.RejectRole)
         clear=box.addButton('Limpar recentes',QMessageBox.ButtonRole.ActionRole)
         updates=box.addButton('Verificar atualizações',QMessageBox.ButtonRole.ActionRole)
         toggle=box.addButton('Desativar atualizações automáticas' if self.settings.value('automatic_updates',True,type=bool) else 'Ativar atualizações automáticas',QMessageBox.ButtonRole.ActionRole)
