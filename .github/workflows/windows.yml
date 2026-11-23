@@ -26,7 +26,7 @@ jobs:
       - name: Capturar as janelas reais
         shell: pwsh
         env:
-          QT_QPA_PLATFORM: offscreen
+          QT_QPA_PLATFORM: windows
         run: |
           @'
           from pathlib import Path
