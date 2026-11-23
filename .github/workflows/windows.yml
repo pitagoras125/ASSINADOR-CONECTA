@@ -62,6 +62,14 @@ jobs:
           w.close()
           '@ | python -
           exit $LASTEXITCODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Previa-Interface-Windows
+          path: |
+            Inicio.png
+            Leitor.png
+            Metodos.png
+            Certificados.png
       - name: Compilar programa
         run: python -m PyInstaller --noconfirm --clean --onedir --windowed --icon assets/app_icon.ico --add-data "assets;assets" --add-data "update_public_key.hex;." --name AssinadorConecta --collect-all cv2 --collect-all brazilfiscalreport --collect-all fpdf --collect-all barcode --collect-all PIL --collect-all pyhanko --collect-all pyhanko_certvalidator --collect-all pypdfium2 --collect-all pypdfium2_raw --copy-metadata cryptography --copy-metadata pyHanko --exclude-module PyQt6 app.py
       - name: Verificar inicialização do executável
