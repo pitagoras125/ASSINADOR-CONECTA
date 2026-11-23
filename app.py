@@ -52,6 +52,7 @@ class Window(SigningWindow):
         QDesktopServices.openUrl(QUrl(url))
     def home(self):
         if self.pdf:return
+        self.workspace.setCurrentIndex(0)
         self.image.setText('Seus documentos, em um só lugar\n\nArraste um PDF ou XML de NF-e modelo 55\nou clique em Abrir para começar.')
     def preferences(self):
         box=QMessageBox(self);box.setWindowTitle('Configurações');box.setText('Conecta PDF 1.3.1\nDESENVOLVIDO POR AVANTE SISTEMAS LTDA\nCNPJ 54.713.453/0001-94\n\nPara usar como leitor padrão, instale o aplicativo e escolha Conecta PDF nas configurações de aplicativos padrão do Windows.\n\nOs arquivos são processados localmente. CPF é um registro declaratório, sem autenticação de identidade.');box.addButton('Fechar',QMessageBox.ButtonRole.RejectRole)
@@ -163,6 +164,7 @@ class Window(SigningWindow):
         if self.pdf:self.render()
     def render(self):
         if not self.pdf:return
+        self.workspace.setCurrentIndex(1)
         page=self.pdf[self.page];width=page.get_height() if self.rotation%180 else page.get_width()
         height=page.get_width() if self.rotation%180 else page.get_height()
         fit_width=(self.scroll.viewport().width()-34)/width
@@ -242,6 +244,7 @@ class Window(SigningWindow):
     def show_signer(self):
         self.statusBar().clearMessage()
         self.dialog.setWindowTitle('Selecionar certificado' if self.mode.currentIndex()==0 else 'Assinar com CPF')
+        self.signer_heading.setText('Escolha seu certificado' if self.mode.currentIndex()==0 else 'Identificação do assinante')
         self.mouse_button.hide()
         self.position.hide()
         self.dialog.adjustSize()

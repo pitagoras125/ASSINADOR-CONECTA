@@ -36,6 +36,27 @@ class CertificateList(QListWidget):
     def setPlaceholderText(self,text):self.setToolTip(text)
     def addItem(self,text,data=None):
         item=QListWidgetItem(text);item.setData(Qt.ItemDataRole.UserRole,data);super().addItem(item)
+        if isinstance(data,dict) and 'name' in data:
+            from PySide6.QtCore import QSize
+            from PySide6.QtWidgets import QVBoxLayout, QWidget, QLabel
+            card=QWidget()
+            card.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            fields=QVBoxLayout(card)
+            fields.setContentsMargins(14,8,14,8)
+            fields.setSpacing(3)
+            holder=QLabel(data['name'])
+            holder.setTextFormat(Qt.TextFormat.PlainText)
+            holder.setWordWrap(True)
+            holder.setStyleSheet('font-size:15px;font-weight:600;color:#102d49;background:transparent')
+            validity=QLabel('Válido até '+str(data.get('expires','')))
+            validity.setStyleSheet('font-size:12px;color:#496178;background:transparent')
+            fields.addWidget(holder)
+            fields.addWidget(validity)
+            item.setText('')
+            item.setData(Qt.ItemDataRole.AccessibleTextRole,text)
+            item.setToolTip(text)
+            item.setSizeHint(QSize(240,max(72,fields.totalHeightForWidth(490)+8)))
+            self.setItemWidget(item,card)
         if self.count()==1:self.setCurrentRow(0)
     def currentData(self):
         item=self.currentItem();return item.data(Qt.ItemDataRole.UserRole) if item else None
