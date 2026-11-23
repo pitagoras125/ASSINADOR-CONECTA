@@ -116,35 +116,50 @@ QSlider::groove:horizontal{height:5px;background:#d4dce6;border-radius:2px} QSli
     w.launch.setMinimumWidth(112)
     w.search_bar=QWidget();search=QHBoxLayout(w.search_bar);w.query=QLineEdit();w.query.setPlaceholderText('Pesquisar no documento…');w.query.returnPressed.connect(w.find_text);search.addWidget(w.query);w.button(search,'Localizar',w.find_text);w.button(search,'Fechar',w.search_bar.hide);w.search_bar.hide();outer.addWidget(w.search_bar)
     view=QHBoxLayout();view.setSpacing(0);view.setContentsMargins(0,0,0,0)
-    rail=QFrame()
-    rail.setObjectName('commandRail')
-    rail.setFixedWidth(178)
-    rail.setStyleSheet('QFrame#commandRail{background:#f1f5fa;border-right:1px solid #dae3ed} QLabel{font-size:12px;font-weight:600;color:#55677b} QPushButton{background:transparent;color:#182e47;border:1px solid transparent;border-radius:7px;padding:5px 9px;text-align:left} QPushButton:hover{background:#dce9f6} QPushButton:focus{border:1px solid #0067b8}')
-    nav=QVBoxLayout(rail)
-    nav.setContentsMargins(12,10,12,10)
-    nav.setSpacing(2)
+    ribbon = QFrame()
+    ribbon.setObjectName('ribbon')
+    ribbon.setStyleSheet("""
+        QFrame#ribbon {background: white; border-bottom: 1px solid #d6dfe9;}
+        QToolButton {background: transparent; color: #20354e; border: 1px solid transparent; border-radius: 6px; padding: 5px; font-size: 12px;}
+        QToolButton:hover {background: #edf4fb; border-color: #d8e5f2;}
+        QToolButton:focus {border-color: #0067b8;}
+        QLabel {color: #54687d; font-size: 11px;}
+    """)
+    strip = QHBoxLayout(ribbon)
+    strip.setContentsMargins(12, 4, 12, 4)
+    strip.setSpacing(10)
     groups=[
         ('Arquivo',[('folder','Abrir',w.open_pdf),('save','Salvar',w.save_pdf),('print','Imprimir',w.print_pdf)]),
         ('Ferramentas',[('merge','Juntar PDFs',w.merge_pdfs),('split','Separar PDF',w.split_pdf),('image','Imagens para PDF',w.convert_images),('file','Converter',lambda:convert(w)),('save','Exportar',lambda:convert(w,True)),('scan','Digitalizar',w.scan_document),('pen','Assinar em lote',w.open_batch)]),
         ('Visualização',[('rotate','Girar',w.rotate),('search','Pesquisar',w.toggle_search),('pages','Páginas',lambda:w.pages_panel.setVisible(not w.pages_panel.isVisible())),('info','Detalhes',w.show_details)])]
-    for title,commands in groups:
-        nav.addSpacing(5)
-        nav.addWidget(QLabel(title))
-        for symbol,label,callback in commands:
-            button=QPushButton(label)
-            button.setIcon(icon(symbol,'#315875'))
-            button.setIconSize(QSize(18,18))
-            button.clicked.connect(callback)
+    for title, commands in groups:
+        group = QVBoxLayout()
+        group.setSpacing(0)
+        row = QHBoxLayout()
+        row.setSpacing(2)
+        for symbol, label, callback in commands:
+            button = QToolButton()
+            button.setText(label)
             button.setToolTip(label)
-            nav.addWidget(button)
+            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
+            button.setIcon(icon(symbol, '#145e97'))
+            button.setIconSize(QSize(21, 21))
+            button.clicked.connect(callback)
+            row.addWidget(button)
             w.actions.append(button)
-    nav.addStretch()
-    rail_scroll=QScrollArea()
-    rail_scroll.setWidgetResizable(True)
-    rail_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-    rail_scroll.setFixedWidth(188)
-    rail_scroll.setWidget(rail)
-    view.addWidget(rail_scroll)
+        group.addLayout(row)
+        caption = QLabel(title)
+        caption.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        group.addWidget(caption)
+        strip.addLayout(group)
+    strip.addStretch()
+    ribbon_scroll = QScrollArea()
+    ribbon_scroll.setWidgetResizable(True)
+    ribbon_scroll.setFrameShape(QFrame.Shape.NoFrame)
+    ribbon_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    ribbon_scroll.setFixedHeight(ribbon.sizeHint().height() + 18)
+    ribbon_scroll.setWidget(ribbon)
+    outer.insertWidget(1, ribbon_scroll)
     w.pages_panel=QWidget();w.pages_panel.setFixedWidth(166);pages=QVBoxLayout(w.pages_panel);pages.setContentsMargins(8,14,8,0);title=QLabel('Páginas');title.setObjectName('heading');pages.addWidget(title)
     w.thumbs=QListWidget();w.thumbs.setIconSize(QSize(112,150));w.thumbs.setViewMode(QListView.ViewMode.IconMode);w.thumbs.setFlow(QListView.Flow.TopToBottom);w.thumbs.setWrapping(False);w.thumbs.setResizeMode(QListView.ResizeMode.Adjust);w.thumbs.setMovement(QListView.Movement.Static);w.thumbs.setGridSize(QSize(142,184));w.thumbs.currentRowChanged.connect(w.thumbnail_selected);pages.addWidget(w.thumbs);view.addWidget(w.pages_panel)
     w.scroll=QScrollArea();w.scroll.setWidgetResizable(True);w.image=DocumentPreview(w);w.image.setAlignment(Qt.AlignmentFlag.AlignCenter);w.image.setStyleSheet('background:#e4eaf3;color:#617590;font-size:17px');w.scroll.setWidget(w.image)
