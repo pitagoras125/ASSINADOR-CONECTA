@@ -18,14 +18,18 @@ def test_inline_drag_resize_and_sign(material,monkeypatch):
     try:
         original=pdf.read_bytes();w.load(str(pdf));w.source.setCurrentIndex(1);w.select_method(0)
         w.pfx.setText(str(pfx));w.password.setText('test-password');application.processEvents()
-        assert not w.dialog.isVisible() and w.sign.isVisible() and w.form.isVisible()
-        w.seal_size.setValue(280);application.processEvents()
-        preview=w.image;rect=preview.display_rect()[0];before=list(preview.placement()['box'])
-        start=rect.center().toPoint();end=start+QPoint(15,-50)
+        assert not w.dialog.isVisible()
+        preview=w.image
+        start=preview.page_rect().center().toPoint()
+        end=start+QPoint(180,55)
         QTest.mousePress(preview,Qt.MouseButton.LeftButton,pos=start)
-        QTest.mouseMove(preview,end);QTest.mouseRelease(preview,Qt.MouseButton.LeftButton,pos=end);application.processEvents()
-        assert preview.placement()['box']!=before
-        assert abs(pdf_to_display(preview.g,preview.placement()['box'])[2]-280)<1
+        QTest.mouseMove(preview,end)
+        QTest.mouseRelease(preview,Qt.MouseButton.LeftButton,pos=end)
+        application.processEvents()
+        assert w.dialog.isVisible()
+        choice=w.placements[str(pdf.resolve())]
+        assert choice['page_index']==0
+        assert pdf_to_display(preview.g,choice['box'])[2]>100
         out=folder/'inline_signed.pdf'
         monkeypatch.setattr(QFileDialog,'getSaveFileName',lambda *a,**k:(str(out),'PDF'))
         # The inline workflow must not reopen the old placement modal.
@@ -41,14 +45,3 @@ def test_inline_drag_resize_and_sign(material,monkeypatch):
     finally:w.close();application.processEvents()
 
 
-def test_full_page_keeps_manual_placement_available(material,monkeypatch):
-    pdf,_,_=material
-    application=QApplication.instance() or QApplication([])
-    w=Window();w.show();application.processEvents();w.load(str(pdf))
-    import inline_preview
-    monkeypatch.setattr(inline_preview,'choose_placement',lambda *a:(_ for _ in ()).throw(ValueError('Sem espaço livre')))
-    try:
-        w.select_method(1)
-        assert w.image.placement() is not None
-        assert w.image.display_rect() is not None
-    finally:w.close();application.processEvents()

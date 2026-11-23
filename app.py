@@ -216,26 +216,41 @@ class Window(SigningWindow):
         if self.busy():return
         if not self.path:
             QMessageBox.information(self,'Abrir documento','Abra um PDF ou XML antes de assinar.');return
-        self.rotation=0;self.render();self.select_method(self.mode.currentIndex())
-        self.signature_panel.setFocus()
+        self.method_picker.open()
+
     def select_method(self,index):
         if not getattr(self,'inline_signing',False):
             return super().select_method(index)
-        self.mode.setCurrentIndex(index);self.cert_choice.setChecked(index==0);self.cpf_choice.setChecked(index==1)
+        if not self.path or self.busy():
+            return
+        self.method_picker.accept()
+        self.mode.setCurrentIndex(index)
+        self.cert_choice.setChecked(index==0)
+        self.cpf_choice.setChecked(index==1)
         self.update_mode()
-        if self.path:
-            self.rotation=0;self.render();self.image.ensure_placement()
-        if index==0 and self.source.currentIndex()==0 and sys.platform=='win32' and not self.busy():self.refresh_certs()
+        self.rotation=0
+        self.render()
+        if self.batch_paths:
+            self.show_signer()
+            return
+        self.image.begin_selection()
+        self.statusBar().showMessage('Arraste na página para marcar a área da assinatura. Esc para cancelar.')
+
     def open_method(self,method):
-        if self.path and not self.busy():self.select_method(method)
-    def sign_page_changed(self,value):
-        if self.pdf:
-            self.page=value-1;self.rotation=0;self.render();self.image.ensure_placement()
-    def resize_seal(self,value):
-        if self.pdf and not self.busy():self.image.resize_seal(value)
+        self.select_method(method)
+
+    def show_signer(self):
+        self.statusBar().clearMessage()
+        self.dialog.setWindowTitle('Selecionar certificado' if self.mode.currentIndex()==0 else 'Assinar com CPF')
+        self.mouse_button.hide()
+        self.position.hide()
+        self.dialog.adjustSize()
+        self.dialog.open()
+        if self.signing_mode()==0 and sys.platform=='win32' and not self.busy():
+            self.refresh_certs()
+
     def sign_document(self):
         if self.busy():return
-        if self.path and (self.signing_mode()==2 or self.visible.isChecked()):self.image.ensure_placement()
         if self.signing_mode()==2 and self.path and not self.batch_paths:
             from engine import inspect_pdf
             try:signed=bool(inspect_pdf(self.path))
