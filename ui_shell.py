@@ -30,7 +30,14 @@ PATHS={
 'info':'<circle cx="12" cy="12" r="9"/><path d="M12 11v7m0-12v2"/>'}
 
 def icon(name,color='#132b51',size=24):
-    svg=f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{PATHS[name]}</svg>'
+    artwork = {
+        'folder':'<path fill="#f6ac0b" stroke="#e99a00" d="M2 6h8l2 2h10v12H2z"/><path fill="#ffd34a" stroke="#efa815" d="M2 10h20l-2 10H3z"/>',
+        'merge':'<rect x="2" y="2" width="14" height="16" rx="3" fill="#ecdcff" stroke="#ab76ef"/><rect x="8" y="7" width="14" height="15" rx="3" fill="#a16aed" stroke="#804bdd"/><path stroke="white" d="M12 14h6m-3-3v6"/>',
+        'split':'<rect x="2" y="3" width="16" height="17" rx="3" fill="#e8dbff" stroke="#ae80ed"/><path stroke="#8750d7" d="M7 15l5-5m-4 0h4v4"/><path fill="#a878ec" d="M15 12h7v9h-7z"/>',
+        'scan':'<path d="m4 11 13-8 3 2-14 8z" fill="#bfe5ff" stroke="#2798de"/><rect x="2" y="14" width="20" height="7" rx="2" fill="#449de3" stroke="#1869ba"/><path stroke="white" d="M15 17h3"/>',
+    }
+    glyph = artwork.get(name, PATHS[name])
+    svg=f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{glyph}</svg>'
     pix=QPixmap(size*2,size*2);pix.fill(Qt.GlobalColor.transparent);pix.setDevicePixelRatio(2)
     painter=QPainter(pix);QSvgRenderer(QByteArray(svg.encode())).render(painter,QRectF(0,0,size,size));painter.end();return QIcon(pix)
 
@@ -120,7 +127,7 @@ QSlider::groove:horizontal{height:5px;background:#d4dce6;border-radius:2px} QSli
     ribbon.setObjectName('ribbon')
     ribbon.setStyleSheet("""
         QFrame#ribbon {background: white; border-bottom: 1px solid #d6dfe9;}
-        QToolButton {background: transparent; color: #20354e; border: 1px solid transparent; border-radius: 6px; padding: 5px; font-size: 12px;}
+        QToolButton {background: transparent; color: #20354e; border: 1px solid transparent; border-radius: 6px; padding: 8px 10px; font-size: 15px;}
         QToolButton:hover {background: #edf4fb; border-color: #d8e5f2;}
         QToolButton:focus {border-color: #0067b8;}
         QLabel {color: #54687d; font-size: 11px;}
@@ -128,31 +135,38 @@ QSlider::groove:horizontal{height:5px;background:#d4dce6;border-radius:2px} QSli
     strip = QHBoxLayout(ribbon)
     strip.setContentsMargins(12, 4, 12, 4)
     strip.setSpacing(10)
-    groups=[
-        ('Arquivo',[('folder','Abrir',w.open_pdf),('save','Salvar',w.save_pdf),('print','Imprimir',w.print_pdf)]),
-        ('Ferramentas',[('merge','Juntar PDFs',w.merge_pdfs),('split','Separar PDF',w.split_pdf),('image','Imagens para PDF',w.convert_images),('file','Converter',lambda:convert(w)),('save','Exportar',lambda:convert(w,True)),('scan','Digitalizar',w.scan_document),('pen','Assinar em lote',w.open_batch)]),
-        ('Visualização',[('rotate','Girar',w.rotate),('search','Pesquisar',w.toggle_search),('pages','Páginas',lambda:w.pages_panel.setVisible(not w.pages_panel.isVisible())),('info','Detalhes',w.show_details)])]
-    for title, commands in groups:
-        group = QVBoxLayout()
-        group.setSpacing(0)
-        row = QHBoxLayout()
-        row.setSpacing(2)
-        for symbol, label, callback in commands:
-            button = QToolButton()
-            button.setText(label)
-            button.setToolTip(label)
-            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
-            colors = {'folder':'#d28b08','merge':'#7946d8','split':'#7946d8','scan':'#1684cb','rotate':'#6744d8','search':'#2474cb','file':'#168566'}
-            button.setIcon(icon(symbol, colors.get(symbol, '#355c8b')))
-            button.setIconSize(QSize(21, 21))
-            button.clicked.connect(callback)
-            row.addWidget(button)
-            w.actions.append(button)
-        group.addLayout(row)
-        caption = QLabel(title)
-        caption.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        group.addWidget(caption)
-        strip.addLayout(group)
+    commands = [
+        ('folder', 'Abrir', w.open_pdf, '#f4a400', [('Salvar', w.save_pdf), ('Imprimir', w.print_pdf)]),
+        ('merge', 'Juntar PDFs', w.merge_pdfs, '#8e54df', []),
+        ('split', 'Separar PDF', w.split_pdf, '#8e54df', []),
+        ('file', 'Converter', lambda: convert(w), '#14987a', [('Imagens para PDF', w.convert_images), ('Exportar', lambda: convert(w, True))]),
+        ('scan', 'Digitalizar', w.scan_document, '#167bcc', []),
+        ('rotate', 'Girar', w.rotate, '#7945d8', [('Páginas', lambda: w.pages_panel.setVisible(not w.pages_panel.isVisible())), ('Detalhes', w.show_details)]),
+        ('search', 'Pesquisar', w.toggle_search, '#176cc0', []),
+    ]
+    for symbol, label, callback, color, extra in commands:
+        button = QToolButton()
+        button.setText(label)
+        button.setToolTip(label)
+        button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        button.setIcon(icon(symbol, color, 30))
+        button.setIconSize(QSize(30,30))
+        button.clicked.connect(callback)
+        if extra:
+            menu = QMenu(button)
+            for action_label, action_callback in extra:
+                menu.addAction(action_label, action_callback)
+            button.setMenu(menu)
+            button.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        strip.addWidget(button)
+        w.actions.append(button)
+    batch_button = QToolButton()
+    batch_button.setIcon(icon('pen', '#ffffff'))
+    batch_button.setToolTip('Assinar em lote')
+    batch_button.setAccessibleName('Assinar em lote')
+    batch_button.clicked.connect(w.open_batch)
+    header.addWidget(batch_button)
+    w.actions.append(batch_button)
     strip.addStretch()
     ribbon_scroll = QScrollArea()
     ribbon_scroll.setWidgetResizable(True)
@@ -161,19 +175,21 @@ QSlider::groove:horizontal{height:5px;background:#d4dce6;border-radius:2px} QSli
     ribbon_scroll.setFixedHeight(ribbon.sizeHint().height() + 18)
     ribbon_scroll.setWidget(ribbon)
     command_bar = QWidget()
-    command_bar.setStyleSheet('background:white')
+    command_bar.setObjectName('commandBar')
+    command_bar.setStyleSheet('QWidget#commandBar{background:white;border-bottom:1px solid #cfdbeb} QPushButton#primary{background:#075cf5;color:white;border-radius:8px;padding:10px 18px}')
     command_layout = QHBoxLayout(command_bar)
     command_layout.setContentsMargins(0,0,14,0)
     command_layout.addWidget(ribbon_scroll,1)
     command_layout.addWidget(w.launch)
     outer.insertWidget(1, command_bar)
-    w.pages_panel=QWidget();w.pages_panel.setFixedWidth(166);pages=QVBoxLayout(w.pages_panel);pages.setContentsMargins(8,14,8,0);title=QLabel('Páginas');title.setObjectName('heading');pages.addWidget(title)
-    w.thumbs=QListWidget();w.thumbs.setIconSize(QSize(112,150));w.thumbs.setViewMode(QListView.ViewMode.IconMode);w.thumbs.setFlow(QListView.Flow.TopToBottom);w.thumbs.setWrapping(False);w.thumbs.setResizeMode(QListView.ResizeMode.Adjust);w.thumbs.setMovement(QListView.Movement.Static);w.thumbs.setGridSize(QSize(142,184));w.thumbs.currentRowChanged.connect(w.thumbnail_selected);pages.addWidget(w.thumbs);view.addWidget(w.pages_panel)
-    w.scroll=QScrollArea();w.scroll.setWidgetResizable(True);w.image=DocumentPreview(w);w.image.setAlignment(Qt.AlignmentFlag.AlignCenter);w.image.setStyleSheet('background:#e4eaf3;color:#617590;font-size:17px');w.scroll.setWidget(w.image)
+    w.pages_panel=QWidget();w.pages_panel.setFixedWidth(198);pages=QVBoxLayout(w.pages_panel);pages.setContentsMargins(8,14,8,0);title=QLabel('Páginas');title.setObjectName('heading');pages.addWidget(title)
+    w.thumbs=QListWidget();w.thumbs.setIconSize(QSize(136,174));w.thumbs.setViewMode(QListView.ViewMode.IconMode);w.thumbs.setFlow(QListView.Flow.TopToBottom);w.thumbs.setWrapping(False);w.thumbs.setResizeMode(QListView.ResizeMode.Adjust);w.thumbs.setMovement(QListView.Movement.Static);w.thumbs.setGridSize(QSize(166,210));w.thumbs.currentRowChanged.connect(w.thumbnail_selected);pages.addWidget(w.thumbs);view.addWidget(w.pages_panel)
+    w.scroll=QScrollArea();w.scroll.setWidgetResizable(True);w.image=DocumentPreview(w);w.image.setAlignment(Qt.AlignmentFlag.AlignCenter);w.image.setStyleSheet('background:#dce6f4;color:#617590;font-size:17px');w.scroll.setWidget(w.image)
     from PySide6.QtWidgets import QStackedWidget
     w.workspace=QStackedWidget()
     welcome=QWidget()
-    welcome.setStyleSheet('QWidget#welcomeCard{background:white;border:1px solid #dbe3ee;border-radius:16px}')
+    welcome.setObjectName('welcome')
+    welcome.setStyleSheet('QWidget#welcome{background:#dce6f4} QWidget#welcomeCard{background:white;border:1px solid #dbe3ee;border-radius:16px}')
     center=QVBoxLayout(welcome)
     card=QFrame()
     card.setObjectName('welcomeCard')
@@ -188,7 +204,10 @@ QSlider::groove:horizontal{height:5px;background:#d4dce6;border-radius:2px} QSli
     title.setStyleSheet('font-size:26px;font-weight:600;color:#142b46')
     body.addWidget(title)
     body.addWidget(QLabel('Arraste um PDF ou um XML de NF-e para esta janela.'))
-    w.button(body,'Escolher arquivo',w.open_pdf,'primary')
+    buttons = QHBoxLayout()
+    w.button(buttons,'Abrir arquivo',w.open_pdf,'primary')
+    w.button(buttons,'Recentes',w.recent)
+    body.addLayout(buttons)
     center.addWidget(card,0,Qt.AlignmentFlag.AlignCenter)
     w.workspace.addWidget(welcome)
     w.workspace.addWidget(w.scroll)
@@ -225,7 +244,13 @@ QSlider::groove:horizontal{height:5px;background:#d4dce6;border-radius:2px} QSli
     w.certs.setStyleSheet('QListWidget{background:#ffffff;border:0px solid #dae0e7;border-radius:8px;padding:4px} QListWidget::item{background:white;border:1px solid #e3e7ed;border-radius:6px;padding:8px;color:#202124} QListWidget::item:selected{background:#e4edff;color:#13295b;border:1px solid #1662f4}')
     w.signer_heading=QLabel()
     w.signer_heading.setObjectName('heading')
-    layout.addWidget(w.signer_heading)
+    heading_row = QHBoxLayout()
+    credential = QLabel()
+    credential.setPixmap(icon('cert','#3c83ed',38).pixmap(38,38))
+    heading_row.addWidget(credential)
+    heading_row.addWidget(w.signer_heading,1)
+    layout.addLayout(heading_row)
+    w.dialog.setMinimumWidth(510)
     w.form.layout().setContentsMargins(0,8,0,6)
     layout.addWidget(w.form)
     actions=QHBoxLayout()

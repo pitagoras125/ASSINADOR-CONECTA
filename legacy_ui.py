@@ -41,7 +41,15 @@ class CertificateList(QListWidget):
             from PySide6.QtWidgets import QVBoxLayout, QWidget, QLabel
             card=QWidget()
             card.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-            fields=QVBoxLayout(card)
+            from PySide6.QtWidgets import QHBoxLayout
+            from ui_shell import icon
+            row=QHBoxLayout(card)
+            row.setContentsMargins(8,4,8,4)
+            badge=QLabel()
+            badge.setPixmap(icon('cert','#2675e4',32).pixmap(32,32))
+            row.addWidget(badge)
+            fields=QVBoxLayout()
+            row.addLayout(fields,1)
             fields.setContentsMargins(14,8,14,8)
             fields.setSpacing(3)
             holder=QLabel(data['name'])
