@@ -90,7 +90,7 @@ def build_shell(w):
     old=w.takeCentralWidget();root=QWidget();root.setObjectName('surface');w.setCentralWidget(root)
     close_path=(Path(__file__).parent/'assets/close.svg').as_posix()
     w.setStyleSheet(STYLE.replace('__CLOSE__',close_path)+"""
-QWidget{font-size:13px} QFrame#masthead{background:#102344}
+QWidget{font-size:13px} QFrame#masthead{background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #313497,stop:0.55 #252674,stop:1 #161b51)}
 QFrame#masthead QLabel{color:white;font-size:19px;font-weight:700}
 QTabBar::tab{background:#344865;color:#e8eef9;padding:10px 16px;margin:3px 3px 0 0;min-width:120px;max-width:240px;border:0;border-top-left-radius:8px;border-top-right-radius:8px}
 QTabBar::tab:selected{background:#f6f8fc;color:#0054de;border:0}
@@ -111,7 +111,7 @@ QSlider::groove:horizontal{height:5px;background:#d4dce6;border-radius:2px} QSli
     w.button(header,'+',w.open_pdf,'headerAction').setToolTip('Abrir documento em uma nova aba')
     w.button(header,'Recentes',w.recent,'headerAction')
     w.button(header,'Configurações',w.preferences,'headerAction').setIcon(icon('settings','white',18));outer.addWidget(masthead)
-    w.launch=w.button(header,'Assinar',w.open_signing,'primary')
+    w.launch=QPushButton('Assinar');w.launch.setObjectName('primary');w.launch.clicked.connect(w.open_signing)
     w.launch.setIcon(icon('pen','white'))
     w.launch.setMinimumWidth(112)
     w.search_bar=QWidget();search=QHBoxLayout(w.search_bar);w.query=QLineEdit();w.query.setPlaceholderText('Pesquisar no documento…');w.query.returnPressed.connect(w.find_text);search.addWidget(w.query);w.button(search,'Localizar',w.find_text);w.button(search,'Fechar',w.search_bar.hide);w.search_bar.hide();outer.addWidget(w.search_bar)
@@ -142,7 +142,8 @@ QSlider::groove:horizontal{height:5px;background:#d4dce6;border-radius:2px} QSli
             button.setText(label)
             button.setToolTip(label)
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
-            button.setIcon(icon(symbol, '#145e97'))
+            colors = {'folder':'#d28b08','merge':'#7946d8','split':'#7946d8','scan':'#1684cb','rotate':'#6744d8','search':'#2474cb','file':'#168566'}
+            button.setIcon(icon(symbol, colors.get(symbol, '#355c8b')))
             button.setIconSize(QSize(21, 21))
             button.clicked.connect(callback)
             row.addWidget(button)
@@ -159,7 +160,13 @@ QSlider::groove:horizontal{height:5px;background:#d4dce6;border-radius:2px} QSli
     ribbon_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
     ribbon_scroll.setFixedHeight(ribbon.sizeHint().height() + 18)
     ribbon_scroll.setWidget(ribbon)
-    outer.insertWidget(1, ribbon_scroll)
+    command_bar = QWidget()
+    command_bar.setStyleSheet('background:white')
+    command_layout = QHBoxLayout(command_bar)
+    command_layout.setContentsMargins(0,0,14,0)
+    command_layout.addWidget(ribbon_scroll,1)
+    command_layout.addWidget(w.launch)
+    outer.insertWidget(1, command_bar)
     w.pages_panel=QWidget();w.pages_panel.setFixedWidth(166);pages=QVBoxLayout(w.pages_panel);pages.setContentsMargins(8,14,8,0);title=QLabel('Páginas');title.setObjectName('heading');pages.addWidget(title)
     w.thumbs=QListWidget();w.thumbs.setIconSize(QSize(112,150));w.thumbs.setViewMode(QListView.ViewMode.IconMode);w.thumbs.setFlow(QListView.Flow.TopToBottom);w.thumbs.setWrapping(False);w.thumbs.setResizeMode(QListView.ResizeMode.Adjust);w.thumbs.setMovement(QListView.Movement.Static);w.thumbs.setGridSize(QSize(142,184));w.thumbs.currentRowChanged.connect(w.thumbnail_selected);pages.addWidget(w.thumbs);view.addWidget(w.pages_panel)
     w.scroll=QScrollArea();w.scroll.setWidgetResizable(True);w.image=DocumentPreview(w);w.image.setAlignment(Qt.AlignmentFlag.AlignCenter);w.image.setStyleSheet('background:#e4eaf3;color:#617590;font-size:17px');w.scroll.setWidget(w.image)
@@ -210,12 +217,12 @@ QSlider::groove:horizontal{height:5px;background:#d4dce6;border-radius:2px} QSli
     w.dialog.setModal(True)
     layout=QVBoxLayout(w.dialog)
     layout.setContentsMargins(24,20,24,20)
-    w.cert_heading.setText('Certificados instalados')
+    w.cert_heading.setText('Certificados instalados no Windows')
     w.refresh.setText('Atualizar lista')
     w.certs.setWordWrap(True)
     w.certs.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
     w.certs.setMinimumHeight(160)
-    w.certs.setStyleSheet('QListWidget{background:#f7f8fa;border:1px solid #dae0e7;border-radius:8px;padding:4px} QListWidget::item{background:white;border:1px solid #e3e7ed;border-radius:6px;padding:8px;color:#202124} QListWidget::item:selected{background:#e5f1fb;color:#00395e;border:1px solid #0078d4}')
+    w.certs.setStyleSheet('QListWidget{background:#ffffff;border:0px solid #dae0e7;border-radius:8px;padding:4px} QListWidget::item{background:white;border:1px solid #e3e7ed;border-radius:6px;padding:8px;color:#202124} QListWidget::item:selected{background:#e4edff;color:#13295b;border:1px solid #1662f4}')
     w.signer_heading=QLabel()
     w.signer_heading.setObjectName('heading')
     layout.addWidget(w.signer_heading)
@@ -229,7 +236,7 @@ QSlider::groove:horizontal{height:5px;background:#d4dce6;border-radius:2px} QSli
     actions.addWidget(w.sign)
     layout.addLayout(actions)
     for dialog in (w.method_picker,w.dialog):
-        dialog.setStyleSheet('QDialog{background:#f7f8fa} QPushButton{font-family:"Segoe UI";border-radius:6px;padding:7px 12px} QPushButton#primary{background:#0067b8;color:white}')
+        dialog.setStyleSheet('QDialog{background:white} QLabel#heading{font-size:23px;font-weight:600;color:#141a2c} QPushButton{font-family:"Segoe UI";border-radius:6px;padding:7px 12px} QPushButton#primary{background:#075cf5;color:white}')
     footer=QFrame();footer.setStyleSheet('QFrame{background:#f9fbff;border-top:1px solid #d7e0ed}');bottom=QHBoxLayout(footer);bottom.setContentsMargins(14,5,14,5)
     w.label=QLabel('Processamento local');w.label.setObjectName('muted');bottom.addWidget(w.label,1)
     w.button(bottom,'‹',lambda:w.move(-1),'icon');w.pagination=QLabel('0 / 0');bottom.addWidget(w.pagination);w.button(bottom,'›',lambda:w.move(1),'icon')
