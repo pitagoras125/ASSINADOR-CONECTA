@@ -56,6 +56,7 @@ jobs:
           w.show_signer()
           w.certs.clear()
           w.certs.addItem('Certificado demonstrativo',{'name':'Empresa de Exemplo Ltda.','expires':'30/01/2028'})
+          w.certs.addItem('Pessoa demonstrativa',{'name':'Ana Oliveira','expires':'30/06/2028'})
           app.processEvents()
           assert w.dialog.grab().save('Certificados.png')
           shot=w.grab()
@@ -79,14 +80,14 @@ jobs:
             Metodos.png
             Certificados.png
       - name: Disponibilizar capturas para revisão
-        if: github.ref == 'refs/heads/preview/revisao-visual'
+        if: github.ref == 'refs/heads/preview/revisao-visual-2'
         shell: bash
         run: |
           git config user.name github-actions
           git config user.email actions@users.noreply.github.com
           git add -f Inicio.png Leitor.png Assinatura.png Certificados.png
           git commit -m "Capturas da interface no Windows [skip ci]"
-          git push origin HEAD:refs/heads/capturas/revisao-visual
+          git push origin HEAD:refs/heads/capturas/revisao-visual-2
       - name: Compilar programa
         run: python -m PyInstaller --noconfirm --clean --onedir --windowed --icon assets/app_icon.ico --add-data "assets;assets" --add-data "update_public_key.hex;." --name AssinadorConecta --collect-all cv2 --collect-all brazilfiscalreport --collect-all fpdf --collect-all barcode --collect-all PIL --collect-all pyhanko --collect-all pyhanko_certvalidator --collect-all pypdfium2 --collect-all pypdfium2_raw --copy-metadata cryptography --copy-metadata pyHanko --exclude-module PyQt6 app.py
       - name: Verificar inicialização do executável

@@ -50,7 +50,7 @@ class CertificateList(QListWidget):
             row.addWidget(badge)
             fields=QVBoxLayout()
             row.addLayout(fields,1)
-            fields.setContentsMargins(14,8,14,8)
+            fields.setContentsMargins(8,0,8,0)
             fields.setSpacing(3)
             holder=QLabel(data['name'])
             holder.setTextFormat(Qt.TextFormat.PlainText)
@@ -63,7 +63,7 @@ class CertificateList(QListWidget):
             item.setText('')
             item.setData(Qt.ItemDataRole.AccessibleTextRole,text)
             item.setToolTip(text)
-            item.setSizeHint(QSize(240,max(72,fields.totalHeightForWidth(490)+8)))
+            item.setSizeHint(QSize(240,max(78,card.sizeHint().height()+16)))
             self.setItemWidget(item,card)
         if self.count()==1:self.setCurrentRow(0)
     def currentData(self):

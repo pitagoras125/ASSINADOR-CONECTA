@@ -241,7 +241,7 @@ QSlider::groove:horizontal{height:5px;background:#d4dce6;border-radius:2px} QSli
     w.certs.setWordWrap(True)
     w.certs.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
     w.certs.setMinimumHeight(160)
-    w.certs.setStyleSheet('QListWidget{background:#ffffff;border:0px solid #dae0e7;border-radius:8px;padding:4px} QListWidget::item{background:white;border:1px solid #e3e7ed;border-radius:6px;padding:8px;color:#202124} QListWidget::item:selected{background:#e4edff;color:#13295b;border:1px solid #1662f4}')
+    w.certs.setStyleSheet('QListWidget{background:#ffffff;border:0px solid #dae0e7;border-radius:8px;padding:4px} QListWidget::item{background:white;border:1px solid #e3e7ed;border-radius:8px;padding:0px;color:#202124} QListWidget::item:selected{background:#e4edff;color:#13295b;border:1px solid #1662f4}')
     w.signer_heading=QLabel()
     w.signer_heading.setObjectName('heading')
     heading_row = QHBoxLayout()
