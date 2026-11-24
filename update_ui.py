@@ -14,16 +14,38 @@ class UpdateJob(QThread):
 class Updates:
     def __init__(self,window):
         self.window=window;self.worker=None;self.pending=None
-        self.timer=QTimer(window);self.timer.timeout.connect(self.check);self.timer.start(6*60*60*1000)
-        QTimer.singleShot(7000,self.check)
+        self.timer = QTimer(window)
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self.check)
+        self.timer.start(7000)
+        self.close_requested = False
     def check(self,manual=False):
         if self.worker and self.worker.isRunning():return
-        if self.window.busy() or QApplication.activeModalWidget() or self.window.dialog.isVisible():return
-        if not manual and not self.window.settings.value('automatic_updates',True,type=bool):return
+        if self.pending:
+            self.offer()
+            return
+        if self.window.busy() or QApplication.activeModalWidget() or self.window.dialog.isVisible():
+            self.timer.start(60000)
+            return
+        if not manual and not self.window.settings.value('automatic_updates',True,type=bool):
+            self.timer.start(60000)
+            return
         self.worker=UpdateJob(True,self.window)
-        self.worker.result.connect(lambda result:self.ready(result,manual));self.worker.failed.connect(lambda msg:QMessageBox.warning(self.window,'Atualizações',msg) if manual else None)
+        self.worker.result.connect(lambda result:self.ready(result,manual));self.worker.failed.connect(lambda msg:self.failed(msg,manual))
+        self.worker.finished.connect(self.finished)
         self.worker.start()
+    def finished(self):
+        if self.close_requested:
+            self.close_requested = False
+            QTimer.singleShot(0, self.window.close)
+
+    def failed(self, message, manual):
+        self.timer.start(5 * 60 * 1000)
+        if manual:
+            QMessageBox.warning(self.window, 'Atualizações', message)
+
     def ready(self,result,manual):
+        self.timer.start(6 * 60 * 60 * 1000)
         payload,path=result
         if not payload:
             if manual:QMessageBox.information(self.window,'Atualizações','Nenhuma versão mais recente foi disponibilizada no canal Windows.')

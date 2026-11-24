@@ -244,7 +244,7 @@ class Window(SigningWindow):
     def show_signer(self):
         self.statusBar().clearMessage()
         self.dialog.setWindowTitle('Selecionar certificado' if self.mode.currentIndex()==0 else 'Assinar com CPF')
-        self.signer_heading.setText('Escolha seu certificado' if self.mode.currentIndex()==0 else 'Identificação do assinante')
+        self.signer_heading.setText('Escolher certificado' if self.mode.currentIndex()==0 else 'Identificação do assinante')
         self.mouse_button.hide()
         self.position.hide()
         self.dialog.adjustSize()
@@ -287,7 +287,14 @@ class Window(SigningWindow):
             for u in event.mimeData().urls():self.load(u.toLocalFile())
             event.acceptProposedAction()
     def closeEvent(self,event):
-        if self.busy() or (hasattr(self,'updates') and self.updates.worker and self.updates.worker.isRunning()):event.ignore();return
+        if self.busy():
+            event.ignore()
+            return
+        if hasattr(self,'updates') and self.updates.worker and self.updates.worker.isRunning():
+            self.updates.close_requested = True
+            self.statusBar().showMessage('Concluindo a verificação de atualização antes de fechar…')
+            event.ignore()
+            return
         if hasattr(self,'updates') and not self.updates.install_on_exit():
             event.ignore();return
         if self.pdf:self.pdf.close();self.pdf=None
