@@ -20,7 +20,7 @@ class Window(SigningWindow):
         self.fit_page=True
         root=build_shell(self)
         self.blur=QGraphicsBlurEffect();self.blur.setEnabled(False);self.blur.setBlurRadius(3);root.setGraphicsEffect(self.blur)
-        self.dialog.setFixedWidth(650)
+        self.dialog.setFixedWidth(462)
         self.ready=True;self.home()
         self.birth.setInputMask('00/00/0000;_')
         from update_ui import Updates
@@ -214,6 +214,13 @@ class Window(SigningWindow):
         self.mouse_button.setText('Posição e repetição em outras páginas')
         self.info.setStyleSheet('font-size:11px;color:#526580;background:transparent;padding:3px')
         self.form.show();self.sign.show()
+        if hasattr(self,'sign_options'):
+            advanced=self.sign_options.isChecked()
+            self.source.setVisible(advanced and self.signing_mode()!=2)
+            self.visible.setVisible(advanced)
+            self.refresh.setVisible(advanced and self.signing_mode()==0)
+            self.mouse_button.setVisible(advanced)
+            self.info.setVisible(advanced or self.signing_mode()==2)
     def open_signing(self):
         if self.busy():return
         if not self.path:
@@ -245,10 +252,13 @@ class Window(SigningWindow):
         self.statusBar().clearMessage()
         self.dialog.setWindowTitle('Selecionar certificado' if self.mode.currentIndex()==0 else 'Assinar com CPF')
         self.signer_heading.setText('Escolher certificado' if self.mode.currentIndex()==0 else 'Identificação do assinante')
-        self.mouse_button.hide()
+        self.sign_options.setChecked(False)
+        self.update_mode()
         self.position.hide()
         self.dialog.adjustSize()
         self.dialog.open()
+        from PySide6.QtCore import QPoint
+        self.dialog.move(self.mapToGlobal(QPoint(max(0,self.width()-self.dialog.width()-28),max(0,(self.height()-self.dialog.height())//2))))
         if self.signing_mode()==0 and sys.platform=='win32' and not self.busy():
             self.refresh_certs()
 
