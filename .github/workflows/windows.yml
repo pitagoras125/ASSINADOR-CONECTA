@@ -1,4 +1,4 @@
-name: Conecta PDF Windows 1.4.2
+name: Conecta PDF Windows 1.4.3
 on:
   workflow_dispatch:
   push:
@@ -27,6 +27,7 @@ jobs:
         shell: pwsh
         env:
           QT_QPA_PLATFORM: windows
+          QT_SCALE_FACTOR: "0.70"
         run: |
           @'
           from pathlib import Path
@@ -35,17 +36,31 @@ jobs:
           from app import Window
           app=QApplication([])
           w=Window()
-          w.resize(1280,800)
+          w.resize(1320,900)
+          from PySide6.QtWidgets import QWidget
+          QWidget.move(w,8,34)
           w.show()
           app.processEvents()
           assert w.grab().save('Inicio.png')
           pdf=Canvas('Exemplo.pdf')
-          pdf.setFont('Helvetica-Bold',22)
-          pdf.drawString(52,746,'Proposta de servicos')
+          pdf.setFillColorRGB(0.1,0.25,0.67)
+          pdf.rect(0,822,595,20,fill=1,stroke=0)
+          pdf.setFillColorRGB(0.07,0.12,0.21)
+          pdf.setFont('Helvetica-Bold',34)
+          pdf.drawString(52,746,'Proposta de serviços')
           pdf.setFont('Helvetica',12)
           pdf.drawString(52,710,'Documento de exemplo para demonstracao do Conecta PDF.')
+          pdf.drawString(52,665,'Prezados,')
+          pdf.drawString(52,640,'Encaminhamos a proposta para acompanhamento dos serviços.')
+          pdf.drawString(52,560,'Atenciosamente,')
+          pdf.drawString(52,522,'Ana Oliveira')
+          pdf.showPage()
+          pdf.setFont('Helvetica-Bold',24)
+          pdf.drawString(52,746,'Escopo dos serviços')
           pdf.save()
           w.load(str(Path('Exemplo.pdf').resolve()))
+          app.processEvents()
+          w.zoom.setCurrentText('100%')
           app.processEvents()
           assert w.grab().save('Leitor.png')
           w.method_picker.open()
@@ -56,8 +71,15 @@ jobs:
           w.show_signer()
           w.certs.clear()
           w.certs.addItem('Certificado demonstrativo',{'name':'Empresa de Exemplo Ltda.','expires':'30/01/2028'})
+          w.certs.addItem('Pessoa demonstrativa',{'name':'Ana Oliveira','expires':'30/06/2028'})
           app.processEvents()
           assert w.dialog.grab().save('Certificados.png')
+          from PySide6.QtCore import QPoint
+          from PySide6.QtTest import QTest
+          QTest.qWait(600)
+          pos=w.mapToGlobal(QPoint(0,0))
+          shot=w.screen().grabWindow(0,pos.x(),pos.y(),w.width(),w.height())
+          assert shot.save('Assinatura.png')
           w.dialog.hide()
           w.close()
           '@ | python -
@@ -70,6 +92,15 @@ jobs:
             Leitor.png
             Metodos.png
             Certificados.png
+      - name: Disponibilizar capturas para revisão
+        if: github.ref == 'refs/heads/preview/assinatura-conferida'
+        shell: bash
+        run: |
+          git config user.name github-actions
+          git config user.email actions@users.noreply.github.com
+          git add -f Inicio.png Leitor.png Assinatura.png Certificados.png
+          git commit -m "Capturas da interface no Windows [skip ci]"
+          git push origin HEAD:refs/heads/capturas/assinatura-conferida
       - name: Compilar programa
         run: python -m PyInstaller --noconfirm --clean --onedir --windowed --icon assets/app_icon.ico --add-data "assets;assets" --add-data "update_public_key.hex;." --name AssinadorConecta --collect-all cv2 --collect-all brazilfiscalreport --collect-all fpdf --collect-all barcode --collect-all PIL --collect-all pyhanko --collect-all pyhanko_certvalidator --collect-all pypdfium2 --collect-all pypdfium2_raw --copy-metadata cryptography --copy-metadata pyHanko --exclude-module PyQt6 app.py
       - name: Verificar inicialização do executável
@@ -86,7 +117,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
         with:
-          name: Conecta-PDF-1.4.2-Instalador-Windows
+          name: Conecta-PDF-1.4.3-Instalador-Windows
           path: Output/*.exe
           retention-days: 7
       - name: Publicar instalador validado
@@ -95,7 +126,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $file = 'Output/Instalar_Conecta_PDF_1.4.2.exe'
+          $file = 'Output/Instalar_Conecta_PDF_1.4.3.exe'
           $hash = (Get-FileHash $file -Algorithm SHA256).Hash.ToLower()
-          "$hash  Instalar_Conecta_PDF_1.4.2.exe" | Out-File -Encoding ascii Output/SHA256SUMS.txt
-          gh release create v1.4.2 $file Output/SHA256SUMS.txt Inicio.png Leitor.png Metodos.png Certificados.png --target $env:GITHUB_SHA --title "Conecta PDF 1.4.2 — interface para Windows" --notes "Faixa de ferramentas no topo e mais espaço para o documento. Capturas geradas pelo aplicativo com dados fictícios."
+          "$hash  Instalar_Conecta_PDF_1.4.3.exe" | Out-File -Encoding ascii Output/SHA256SUMS.txt
+          gh release create v1.4.3 $file Output/SHA256SUMS.txt Inicio.png Leitor.png Metodos.png Certificados.png Assinatura.png --target $env:GITHUB_SHA --title "Conecta PDF 1.4.3 — interface para Windows" --notes "Faixa de ferramentas no topo e mais espaço para o documento. Capturas geradas pelo aplicativo com dados fictícios."

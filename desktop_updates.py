@@ -4,7 +4,7 @@ from pathlib import Path
 from urllib.request import Request,build_opener,HTTPRedirectHandler
 from urllib.parse import urlsplit
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-VERSION='1.4.2'
+VERSION='1.4.3'
 MANIFEST_URL='https://github.com/pitagoras125/assinador-conecta-atualizacoes/releases/latest/download/desktop-update.json'
 ASSET_PREFIX='https://github.com/pitagoras125/assinador-conecta-atualizacoes/releases/download/'
 MAX_DOWNLOAD=600*1024*1024
