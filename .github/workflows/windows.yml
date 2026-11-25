@@ -37,7 +37,8 @@ jobs:
           app=QApplication([])
           w=Window()
           w.resize(1320,900)
-          w.move(8,34)
+          from PySide6.QtWidgets import QWidget
+          QWidget.move(w,8,34)
           w.show()
           app.processEvents()
           assert w.grab().save('Inicio.png')
@@ -92,14 +93,14 @@ jobs:
             Metodos.png
             Certificados.png
       - name: Disponibilizar capturas para revisão
-        if: github.ref == 'refs/heads/preview/assinatura-completa'
+        if: github.ref == 'refs/heads/preview/assinatura-conferida'
         shell: bash
         run: |
           git config user.name github-actions
           git config user.email actions@users.noreply.github.com
           git add -f Inicio.png Leitor.png Assinatura.png Certificados.png
           git commit -m "Capturas da interface no Windows [skip ci]"
-          git push origin HEAD:refs/heads/capturas/assinatura-completa
+          git push origin HEAD:refs/heads/capturas/assinatura-conferida
       - name: Compilar programa
         run: python -m PyInstaller --noconfirm --clean --onedir --windowed --icon assets/app_icon.ico --add-data "assets;assets" --add-data "update_public_key.hex;." --name AssinadorConecta --collect-all cv2 --collect-all brazilfiscalreport --collect-all fpdf --collect-all barcode --collect-all PIL --collect-all pyhanko --collect-all pyhanko_certvalidator --collect-all pypdfium2 --collect-all pypdfium2_raw --copy-metadata cryptography --copy-metadata pyHanko --exclude-module PyQt6 app.py
       - name: Verificar inicialização do executável
